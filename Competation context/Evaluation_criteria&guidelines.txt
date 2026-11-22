@@ -1,0 +1,32 @@
+📢 PROMPTWARS 2026 | Evaluation Criteria & Guidelines
+
+Dear Participants,
+
+As previously communicated, there are no restrictions on the AI tools you choose to use during PromptWars 2026.
+
+To ensure a consistent and transparent evaluation process, all submissions will be assessed using the same six parameters:
+
+1.⁠ ⁠Code Quality – Structure, readability, and maintainability.
+2.⁠ ⁠Security – Secure and reliable implementation.
+3.⁠ ⁠Efficiency – Performance and resource optimization.
+4.⁠ ⁠Testing – Functionality and reliability.
+5.⁠ ⁠Accessibility – Usability and inclusiveness.
+6.⁠ ⁠Problem Statement Alignment – How effectively your solution addresses the given challenge.
+
+💡 Additional Consideration: Google Technologies
+
+Participants are encouraged to explore Google technologies such as Firebase, Google Cloud, Gemini, and Google AI Studio.
+
+The effective and relevant integration of these technologies may positively contribute to the overall quality of your solution under the applicable evaluation criteria. However, simply using a particular service does not guarantee additional marks.
+
+The evaluation focuses on what you build, not which tool you use.
+
+A powerful AI tool alone does not guarantee a strong solution. What matters is how effectively you use the available resources to develop a functional, well-implemented application.
+
+PromptWars is about smart and effective prompting, creative problem-solving, and effective execution.
+
+We encourage everyone to participate confidently, make the most of their preferred tools, and focus on building the best possible solution.
+
+All the best!!!
+
+Team PromptWars 2026
