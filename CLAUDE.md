@@ -32,11 +32,10 @@ Google technologies (Firebase, Google Cloud, Gemini, Google AI Studio) are encou
 
 ## Working rules
 - Keep responses and diffs concise; avoid re-reading files unnecessarily.
-- Commit only when the user asks.
 
 ## Git workflow
 - Solo build: work directly on `main`; no feature branches or PRs.
-- Commit at each working milestone with small, focused commits; push regularly so the repo is always submittable.
+- Claude commits at each working milestone without asking — small, focused commits; push regularly so the repo is always submittable.
 - Message prefixes: `feat:`, `fix:`, `test:`, `docs:`, `a11y:`, `refactor:`, `chore:`.
 - No Co-Authored-By or AI attribution lines in commits.
 - Never commit secrets — check `git status` before committing; `.env*` stays ignored.
