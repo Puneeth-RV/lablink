@@ -108,7 +108,7 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
 
 ## Images
 
-24 equipment photos come from Wikimedia Commons under free licences (CC0, CC BY or CC BY-SA). Each was resized to about 40 KB and is served from the app itself, so no third-party requests are made. Authors and licences are listed in [`CREDITS.md`](CREDITS.md) and shown under each photo. Items without a suitable photo use original line-art illustrations.
+29 equipment photos come from Wikimedia Commons under free licences (CC0, CC BY or CC BY-SA). Each was resized to about 40 KB and is served from the app itself, so no third-party requests are made. Authors and licences are listed in [`CREDITS.md`](CREDITS.md) and shown under each photo. Items without a suitable photo use original line-art illustrations.
 
 ## Run locally
 

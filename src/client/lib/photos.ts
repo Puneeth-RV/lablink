@@ -34,6 +34,11 @@ export const PHOTOS: Record<string, PhotoCredit> = {
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Microvolume_UV-Vis_spectrophotometry_-_Implen_NanoPhotometer_NP80.jpg"
   },
+  "cse-fpga-1": {
+    "author": "SparkFun Electronics from Boulder, USA",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Mojo_v3_FPGA_Development_Board_(9303578174).jpg"
+  },
   "cse-gpu-1": {
     "author": "FreeMediaKid!",
     "license": "CC BY-SA 4.0",
@@ -49,10 +54,20 @@ export const PHOTOS: Record<string, PhotoCredit> = {
     "license": "CC BY 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:NVIDIA_Jetson_Nano_Developer_Kit_(40650425503).jpg"
   },
+  "cse-jetson-2": {
+    "author": "Auledas",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:NVidia_Jetson_Orin_AGX.png"
+  },
   "cse-pi-1": {
     "author": "Gareth Halfacree from Bradford, UK",
     "license": "CC BY-SA 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:Circumference_C25_(41227579055).png"
+  },
+  "cse-robot-1": {
+    "author": "Oleg Yunakov",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:KUKA_industrial_robotic_arm_performing_%22The_Beach%22_by_Roy_Nachum_-_06.jpg"
   },
   "cse-vr-1": {
     "author": "Maximilian Prandstätter",
@@ -74,6 +89,11 @@ export const PHOTOS: Record<string, PhotoCredit> = {
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:ESP32_Dev_Board.jpg"
   },
+  "ece-la-1": {
+    "author": "DGtal",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Hewlett-Packard_1653B_Logic_analyzer.jpg"
+  },
   "ece-osc-1": {
     "author": "Dave Jones from Australia",
     "license": "CC BY 2.0",
@@ -83,6 +103,11 @@ export const PHOTOS: Record<string, PhotoCredit> = {
     "author": "Kalle",
     "license": "CC BY-SA 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:Helsinki,_Oodi,_oscilloscope_(Rigol_DS1054).jpg"
+  },
+  "ece-psu-1": {
+    "author": "Derrick Parker",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Bench_power_supply.jpg"
   },
   "ece-sa-1": {
     "author": "Giacomo Alessandroni",

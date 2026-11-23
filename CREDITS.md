@@ -9,16 +9,21 @@ Equipment photos are from [Wikimedia Commons](https://commons.wikimedia.org/) an
 | `bio-micro-1` | Masur | CC BY-SA 3.0 | [File:Olympus-BX61-fluorescence microscope.jpg](https://commons.wikimedia.org/wiki/File:Olympus-BX61-fluorescence_microscope.jpg) |
 | `bio-pcr-1` | GFJ | CC BY-SA 4.0 | [File:Eppendorf Mastercycler Pro S.jpg](https://commons.wikimedia.org/wiki/File:Eppendorf_Mastercycler_Pro_S.jpg) |
 | `bio-spec-1` | Julia Ionov (Designer365) | CC BY-SA 4.0 | [File:Microvolume UV-Vis spectrophotometry - Implen NanoPhotometer NP80.jpg](https://commons.wikimedia.org/wiki/File:Microvolume_UV-Vis_spectrophotometry_-_Implen_NanoPhotometer_NP80.jpg) |
+| `cse-fpga-1` | SparkFun Electronics from Boulder, USA | CC BY 2.0 | [File:Mojo v3 FPGA Development Board (9303578174).jpg](https://commons.wikimedia.org/wiki/File:Mojo_v3_FPGA_Development_Board_(9303578174).jpg) |
 | `cse-gpu-1` | FreeMediaKid! | CC BY-SA 4.0 | [File:Nvidia GeForce RTX 5060 Ti 16GB, PNY Overclocked Dual Fan, front.jpg](https://commons.wikimedia.org/wiki/File:Nvidia_GeForce_RTX_5060_Ti_16GB,_PNY_Overclocked_Dual_Fan,_front.jpg) |
 | `cse-gpu-2` | Nvidia | CC BY-SA 4.0 | [File:Nvidia Tesla A100.png](https://commons.wikimedia.org/wiki/File:Nvidia_Tesla_A100.png) |
 | `cse-jetson-1` | SparkFun Electronics from Boulder, USA | CC BY 2.0 | [File:NVIDIA Jetson Nano Developer Kit (40650425503).jpg](https://commons.wikimedia.org/wiki/File:NVIDIA_Jetson_Nano_Developer_Kit_(40650425503).jpg) |
+| `cse-jetson-2` | Auledas | CC BY 4.0 | [File:NVidia Jetson Orin AGX.png](https://commons.wikimedia.org/wiki/File:NVidia_Jetson_Orin_AGX.png) |
 | `cse-pi-1` | Gareth Halfacree from Bradford, UK | CC BY-SA 2.0 | [File:Circumference C25 (41227579055).png](https://commons.wikimedia.org/wiki/File:Circumference_C25_(41227579055).png) |
+| `cse-robot-1` | Oleg Yunakov | CC BY-SA 4.0 | [File:KUKA industrial robotic arm performing "The Beach" by Roy Nachum - 06.jpg](https://commons.wikimedia.org/wiki/File:KUKA_industrial_robotic_arm_performing_%22The_Beach%22_by_Roy_Nachum_-_06.jpg) |
 | `cse-vr-1` | Maximilian Prandstätter | CC BY 2.0 | [File:Oculus Quest II (50844634326).jpg](https://commons.wikimedia.org/wiki/File:Oculus_Quest_II_(50844634326).jpg) |
 | `ece-fg-1` | Anselm Schüler | CC BY-SA 4.0 | [File:Function Generator FG100.jpg](https://commons.wikimedia.org/wiki/File:Function_Generator_FG100.jpg) |
 | `ece-fpga-1` | Gareth Halfacree from Bradford, UK | CC BY-SA 2.0 | [File:Adapteva Parallella DK02 - Zynq (15455173526).png](https://commons.wikimedia.org/wiki/File:Adapteva_Parallella_DK02_-_Zynq_(15455173526).png) |
 | `ece-iot-1` | Edwiyanto | CC BY-SA 4.0 | [File:ESP32 Dev Board.jpg](https://commons.wikimedia.org/wiki/File:ESP32_Dev_Board.jpg) |
+| `ece-la-1` | DGtal | CC BY-SA 4.0 | [File:Hewlett-Packard 1653B Logic analyzer.jpg](https://commons.wikimedia.org/wiki/File:Hewlett-Packard_1653B_Logic_analyzer.jpg) |
 | `ece-osc-1` | Dave Jones from Australia | CC BY 2.0 | [File:Keysight 3000T Oscilloscope Teardown (16057072819).jpg](https://commons.wikimedia.org/wiki/File:Keysight_3000T_Oscilloscope_Teardown_(16057072819).jpg) |
 | `ece-osc-2` | Kalle | CC BY-SA 2.0 | [File:Helsinki, Oodi, oscilloscope (Rigol DS1054).jpg](https://commons.wikimedia.org/wiki/File:Helsinki,_Oodi,_oscilloscope_(Rigol_DS1054).jpg) |
+| `ece-psu-1` | Derrick Parker | CC0 | [File:Bench power supply.jpg](https://commons.wikimedia.org/wiki/File:Bench_power_supply.jpg) |
 | `ece-sa-1` | Giacomo Alessandroni | CC BY-SA 4.0 | [File:Spectrum analyzer at 868.8 MHz.jpg](https://commons.wikimedia.org/wiki/File:Spectrum_analyzer_at_868.8_MHz.jpg) |
 | `ece-solder-1` | Leisto | CC BY-SA 4.0 | [File:Soldering Station 375A+.jpg](https://commons.wikimedia.org/wiki/File:Soldering_Station_375A%2B.jpg) |
 | `ece-vna-1` | Dtwitkowski | CC BY-SA 3.0 | [File:Anritsu MS2035B portable vector network analyzer.jpg](https://commons.wikimedia.org/wiki/File:Anritsu_MS2035B_portable_vector_network_analyzer.jpg) |
