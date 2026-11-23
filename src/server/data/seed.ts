@@ -1,0 +1,144 @@
+import { campusTime, DAY_MS, HOUR_MS, toIso } from '../domain/time.js';
+import type { AccessRequest, Booking, Equipment, Project, SlotRequest, User } from '../domain/types.js';
+import type { SeedData } from '../services/store.js';
+
+/** Equipment defaults; each entry overrides what differs. */
+const eq = (e: Partial<Equipment> & Pick<Equipment, 'id' | 'name' | 'category' | 'departmentId' | 'location' | 'description' | 'capabilities'>): Equipment => ({
+  requiresApproval: false,
+  status: 'available',
+  maxSlotHours: 3,
+  highDemand: false,
+  ...e,
+});
+
+const EQUIPMENT: Equipment[] = [
+  eq({ id: 'ece-osc-1', name: 'Keysight 4-Channel Oscilloscope', category: 'oscilloscope', departmentId: 'ece', location: 'ECE Block, Lab 101', description: '200 MHz digital storage oscilloscope with protocol decoding.', capabilities: ['signal analysis', 'waveform capture', 'I2C/SPI/UART decoding', 'circuit debugging'], highDemand: true }),
+  eq({ id: 'ece-osc-2', name: 'Rigol 4-Channel Oscilloscope', category: 'oscilloscope', departmentId: 'ece', location: 'ECE Block, Lab 102', description: '100 MHz digital oscilloscope for general circuit debugging.', capabilities: ['signal analysis', 'waveform capture', 'circuit debugging'] }),
+  eq({ id: 'mech-osc-1', name: 'Tektronix 2-Channel Oscilloscope', category: 'oscilloscope', departmentId: 'mech', location: 'Mechatronics Lab, Room 12', description: '50 MHz oscilloscope used for motor-driver and sensor work.', capabilities: ['signal analysis', 'motor control debugging', 'sensor testing'] }),
+  eq({ id: 'ece-fpga-1', name: 'Xilinx Zynq-7000 FPGA Board', category: 'fpga-board', departmentId: 'ece', location: 'VLSI Lab, Room 204', description: 'ARM + FPGA SoC board for hardware acceleration and digital design.', capabilities: ['hardware acceleration', 'digital design', 'image processing', 'Verilog/VHDL'], requiresApproval: true, highDemand: true }),
+  eq({ id: 'cse-fpga-1', name: 'Intel DE10-Lite FPGA Kit', category: 'fpga-board', departmentId: 'cse', location: 'Systems Lab, Room 3', description: 'Entry-level FPGA kit for digital logic and computer architecture.', capabilities: ['digital design', 'Verilog/VHDL', 'computer architecture'] }),
+  eq({ id: 'cse-gpu-1', name: 'RTX GPU Workstation', category: 'gpu-workstation', departmentId: 'cse', location: 'AI Lab, Room 7', description: 'Workstation with a 24 GB GPU for deep-learning training and inference.', capabilities: ['deep learning', 'model training', 'computer vision', 'CUDA'], highDemand: true, maxSlotHours: 4 }),
+  eq({ id: 'cse-gpu-2', name: 'A100 Compute Node', category: 'gpu-workstation', departmentId: 'cse', location: 'Data Centre, Rack 2', description: '80 GB data-centre GPU for large model training.', capabilities: ['deep learning', 'large model training', 'CUDA', 'distributed training'], requiresApproval: true, maxSlotHours: 6 }),
+  eq({ id: 'cse-jetson-1', name: 'Jetson Orin Nano Dev Kit', category: 'embedded-ai-kit', departmentId: 'cse', location: 'AI Lab, Room 7', description: 'Edge AI kit for deploying vision models on-device.', capabilities: ['edge AI', 'computer vision', 'robotics', 'model deployment'] }),
+  eq({ id: 'mech-3dp-1', name: 'Prusa MK4 3D Printer', category: '3d-printer', departmentId: 'mech', location: 'Fabrication Lab', description: 'FDM printer for PLA/PETG prototypes up to 25 cm.', capabilities: ['rapid prototyping', 'enclosures', 'mechanical parts'], requiredTraining: 'fabrication-safety', highDemand: true, maxSlotHours: 6 }),
+  eq({ id: 'mech-3dp-2', name: 'Ultimaker S5 3D Printer', category: '3d-printer', departmentId: 'mech', location: 'Fabrication Lab', description: 'Dual-extrusion printer for large, high-precision parts.', capabilities: ['rapid prototyping', 'dual material', 'large parts'], requiredTraining: 'fabrication-safety', status: 'maintenance', maxSlotHours: 6 }),
+  eq({ id: 'mech-laser-1', name: 'CO2 Laser Cutter', category: 'laser-cutter', departmentId: 'mech', location: 'Fabrication Lab', description: '60 W laser cutter for acrylic, wood and cardboard.', capabilities: ['laser cutting', 'engraving', 'enclosures'], requiredTraining: 'laser-safety', requiresApproval: true, maxSlotHours: 2 }),
+  eq({ id: 'ece-sa-1', name: 'Spectrum Analyzer', category: 'spectrum-analyzer', departmentId: 'ece', location: 'RF Lab, Room 110', description: '3 GHz spectrum analyzer for RF and wireless measurements.', capabilities: ['RF analysis', 'wireless testing', 'EMI debugging'], requiresApproval: true }),
+  eq({ id: 'ece-solder-1', name: 'Soldering & Rework Station', category: 'soldering-station', departmentId: 'ece', location: 'ECE Block, Lab 101', description: 'Temperature-controlled soldering with hot-air rework.', capabilities: ['PCB assembly', 'SMD rework', 'prototyping'], requiredTraining: 'esd-safety' }),
+  eq({ id: 'ece-iot-1', name: 'ESP32 IoT Sensor Bench', category: 'iot-kit', departmentId: 'ece', location: 'IoT Lab, Room 115', description: 'ESP32 boards with soil, temperature, humidity and gas sensors.', capabilities: ['IoT prototyping', 'sensor integration', 'wireless connectivity'] }),
+  eq({ id: 'bio-pcr-1', name: 'PCR Thermal Cycler', category: 'pcr-machine', departmentId: 'bio', location: 'Biotech Lab, Room 5', description: '96-well thermal cycler for DNA amplification.', capabilities: ['DNA amplification', 'molecular biology'], requiredTraining: 'biosafety-l1', requiresApproval: true }),
+  eq({ id: 'bio-micro-1', name: 'Fluorescence Microscope', category: 'microscope', departmentId: 'bio', location: 'Biotech Lab, Room 6', description: 'Inverted fluorescence microscope with camera.', capabilities: ['cell imaging', 'fluorescence', 'microscopy'] }),
+  eq({ id: 'cse-vr-1', name: 'VR Development Station', category: 'vr-headset', departmentId: 'cse', location: 'HCI Lab, Room 9', description: 'Standalone VR headset with a tethered development PC.', capabilities: ['virtual reality', 'HCI research', 'Unity development'] }),
+];
+
+const student = (id: string, name: string, departmentId: string, trainings: string[]): User => ({ id, name, role: 'student', departmentId, trainings });
+const faculty = (id: string, name: string, departmentId: string): User => ({ id, name, role: 'faculty', departmentId, trainings: [] });
+
+const USERS: User[] = [
+  student('stu-asha', 'Asha Nair', 'ece', ['esd-safety']),
+  student('stu-ravi', 'Ravi Kumar', 'cse', ['fabrication-safety']),
+  student('stu-meera', 'Meera Joshi', 'mech', ['fabrication-safety', 'laser-safety']),
+  student('stu-kabir', 'Kabir Singh', 'bio', ['biosafety-l1', 'esd-safety']),
+  student('stu-neha', 'Neha Patel', 'ece', []),
+  student('stu-arjun', 'Arjun Mehta', 'cse', []),
+  faculty('fac-iyer', 'Dr. Lakshmi Iyer', 'ece'),
+  faculty('fac-khan', 'Dr. Imran Khan', 'cse'),
+  faculty('fac-das', 'Dr. Ananya Das', 'mech'),
+  faculty('fac-rao', 'Dr. Suresh Rao', 'bio'),
+];
+
+/** Builds demo data relative to `now` so the demo always looks current. */
+export function createSeed(now: number = Date.now()): SeedData {
+  const deadline = (days: number) => toIso(campusTime(now, days, 18));
+  const at = (day: number, hour: number, hours: number) => {
+    const start = campusTime(now, day, hour);
+    return { start: toIso(start), end: toIso(start + hours * HOUR_MS) };
+  };
+  const ago = (hours: number) => toIso(now - hours * HOUR_MS);
+
+  const projects: Project[] = [
+    { id: 'proj-asha-iot', title: 'Smart Irrigation IoT Node', description: 'Low-power soil-moisture node that schedules irrigation over Wi-Fi.', ownerId: 'stu-asha', supervisorId: 'fac-iyer', deadline: deadline(3), essentialCategories: ['oscilloscope', 'iot-kit'] },
+    { id: 'proj-asha-fpga', title: 'FPGA Image Filter Accelerator', description: 'Real-time edge-detection filter implemented in Verilog.', ownerId: 'stu-asha', supervisorId: 'fac-iyer', deadline: deadline(12), essentialCategories: ['fpga-board'] },
+    { id: 'proj-ravi-ml', title: 'Campus Crowd Detection Model', description: 'Vision model that estimates crowd density from CCTV frames.', ownerId: 'stu-ravi', supervisorId: 'fac-khan', deadline: deadline(9), essentialCategories: ['gpu-workstation', 'embedded-ai-kit'] },
+    { id: 'proj-ravi-drone', title: 'Drone Frame Prototype', description: 'Lightweight quadcopter frame with custom ESC tuning.', ownerId: 'stu-ravi', supervisorId: 'fac-das', deadline: deadline(20), essentialCategories: ['3d-printer'] },
+    { id: 'proj-meera-robot', title: 'Adaptive Robotic Gripper', description: 'Soft gripper with force-sensing fingers and servo control.', ownerId: 'stu-meera', supervisorId: 'fac-das', deadline: deadline(5), essentialCategories: ['3d-printer', 'laser-cutter', 'oscilloscope'] },
+    { id: 'proj-kabir-bio', title: 'Water-Quality Biosensor', description: 'Electrochemical biosensor detecting E. coli in drinking water.', ownerId: 'stu-kabir', supervisorId: 'fac-rao', deadline: deadline(6), essentialCategories: ['pcr-machine'] },
+    { id: 'proj-neha-radar', title: 'Short-Range Radar', description: 'FMCW radar for gesture sensing.', ownerId: 'stu-neha', supervisorId: 'fac-iyer', deadline: deadline(15), essentialCategories: ['oscilloscope', 'spectrum-analyzer'] },
+    { id: 'proj-arjun-llm', title: 'Course-Notes Summariser', description: 'Fine-tuned small language model for lecture notes.', ownerId: 'stu-arjun', supervisorId: 'fac-khan', deadline: deadline(8), essentialCategories: ['gpu-workstation'] },
+  ];
+
+  let n = 0;
+  const book = (equipmentId: string, userId: string, projectId: string, day: number, hour: number, hours: number): Booking => ({
+    id: `seed-b${++n}`,
+    equipmentId,
+    userId,
+    projectId,
+    ...at(day, hour, hours),
+    status: 'confirmed',
+    createdAt: toIso(campusTime(now, day, hour) - 2 * DAY_MS),
+  });
+
+  const bookings: Booking[] = [
+    // The flagship oscilloscope is heavily used (mostly by Neha and Arjun's labs) …
+    ...[-7, -6, -5, -4, -3, -2, -1].flatMap((d) => [
+      book('ece-osc-1', 'stu-neha', 'proj-neha-radar', d, 9, 3),
+      book('ece-osc-1', 'stu-neha', 'proj-neha-radar', d, 13, 3),
+      book('ece-osc-1', 'stu-arjun', 'proj-arjun-llm', d, 16, 2),
+    ]),
+    // … while an equivalent scope in Mechanical sits idle — the insights page flags this.
+    book('ece-osc-2', 'stu-asha', 'proj-asha-iot', -2, 10, 2),
+    book('cse-gpu-1', 'stu-ravi', 'proj-ravi-ml', -3, 9, 4),
+    book('cse-gpu-1', 'stu-ravi', 'proj-ravi-ml', -1, 9, 4),
+    book('cse-gpu-1', 'stu-arjun', 'proj-arjun-llm', -2, 13, 4),
+    book('bio-micro-1', 'stu-kabir', 'proj-kabir-bio', -1, 14, 3),
+    book('ece-osc-1', 'stu-neha', 'proj-neha-radar', 1, 14, 3),
+    book('cse-gpu-1', 'stu-arjun', 'proj-arjun-llm', 2, 9, 4),
+  ];
+
+  let r = 0;
+  const request = (equipmentId: string, userId: string, projectId: string, day: number, hour: number, hours: number, waitedHours: number): SlotRequest => ({
+    id: `seed-r${++r}`,
+    equipmentId,
+    userId,
+    projectId,
+    ...at(day, hour, hours),
+    status: 'pending',
+    createdAt: ago(waitedHours),
+  });
+
+  // Competing requests for the same high-demand slots — resolved fairly by the allocation engine.
+  const slotRequests: SlotRequest[] = [
+    request('ece-osc-1', 'stu-meera', 'proj-meera-robot', 1, 10, 2, 20),
+    request('ece-osc-1', 'stu-asha', 'proj-asha-iot', 1, 10, 2, 3),
+    request('ece-osc-1', 'stu-ravi', 'proj-ravi-drone', 1, 11, 2, 30),
+    request('mech-3dp-1', 'stu-ravi', 'proj-ravi-drone', 1, 9, 5, 10),
+    request('mech-3dp-1', 'stu-meera', 'proj-meera-robot', 1, 11, 4, 2),
+    request('cse-gpu-1', 'stu-ravi', 'proj-ravi-ml', 3, 13, 4, 6),
+    request('cse-gpu-1', 'stu-arjun', 'proj-arjun-llm', 3, 14, 3, 1),
+  ];
+
+  const accessRequests: AccessRequest[] = [
+    { id: 'seed-a1', equipmentId: 'ece-fpga-1', userId: 'stu-asha', projectId: 'proj-asha-fpga', justification: 'I need the Zynq board to synthesise and benchmark my Verilog edge-detection pipeline against the ARM core for my final-year project.', status: 'pending', createdAt: ago(5) },
+    { id: 'seed-a2', equipmentId: 'mech-laser-1', userId: 'stu-meera', projectId: 'proj-meera-robot', justification: 'Cutting acrylic finger plates and the gripper base for the adaptive gripper prototype.', status: 'pending', createdAt: ago(8) },
+    { id: 'seed-a3', equipmentId: 'bio-pcr-1', userId: 'stu-kabir', projectId: 'proj-kabir-bio', justification: 'Amplify E. coli DNA samples to validate the biosensor detection threshold.', status: 'pending', createdAt: ago(26) },
+    { id: 'seed-a4', equipmentId: 'cse-gpu-2', userId: 'stu-ravi', projectId: 'proj-ravi-ml', justification: 'Training the crowd-density model on 40k annotated frames.', status: 'approved', createdAt: ago(72), decidedBy: 'fac-khan', decisionNote: 'Approved for model training.' },
+  ];
+
+  return {
+    departments: [
+      { id: 'ece', name: 'Electronics & Communication' },
+      { id: 'cse', name: 'Computer Science' },
+      { id: 'mech', name: 'Mechanical' },
+      { id: 'bio', name: 'Biotechnology' },
+    ],
+    users: USERS,
+    equipment: EQUIPMENT,
+    projects,
+    bookings,
+    slotRequests,
+    accessRequests,
+  };
+}
+
+/** Personas offered on the demo sign-in screen. */
+export const DEMO_USER_IDS = ['stu-asha', 'stu-ravi', 'stu-meera', 'stu-kabir', 'fac-iyer', 'fac-khan', 'fac-das', 'fac-rao'];
