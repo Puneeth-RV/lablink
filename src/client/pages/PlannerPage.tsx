@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { Examples } from '../components/Examples';
 import { Badge, SourceBadge, Status } from '../components/ui';
 import { api, ApiError, type BookingResult, type PlanResponse, type Profile, type Project } from '../lib/api';
 import { formatDate, titleCase } from '../lib/format';
@@ -145,14 +144,6 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
                 Write it the way you would explain it to a friend, including when it is due ("due 5 December",
                 "in 2 weeks"). LabLink works out the title, deadline and equipment you need.
               </p>
-              <Examples
-                label="Example projects"
-                examples={[
-                  'Smart wheelchair that detects obstacles with a camera. Train the vision model and solder the motor controller. Due next Friday.',
-                  'Line-following robot for my minor project. Need to tune the motor driver with an oscilloscope and 3D print the chassis. Due in 2 weeks.',
-                ]}
-                onPick={setDescription}
-              />
             </>
           ) : (
             <>
