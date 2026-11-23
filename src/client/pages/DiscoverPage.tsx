@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { EquipmentMedia } from '../components/EquipmentMedia';
+import { Examples } from '../components/Examples';
 import { Badge, Loading, SourceBadge, Status } from '../components/ui';
 import { api, type DiscoverResponse, type Equipment, type Meta } from '../lib/api';
 import { titleCase } from '../lib/format';
@@ -79,6 +80,15 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
           <p id="need-hint" className="muted small">
             Suggestions are generated with Gemini and limited to equipment in the catalogue.
           </p>
+          <Examples
+            label="Example needs"
+            examples={[
+              'Debug I2C signals on my soil sensor board',
+              'Train a vision model on CCTV frames',
+              'Measure Wi-Fi emissions of my IoT node',
+            ]}
+            onPick={setNeed}
+          />
           {aiError && (
             <p id="need-error" className="field-error" role="alert">
               {aiError}

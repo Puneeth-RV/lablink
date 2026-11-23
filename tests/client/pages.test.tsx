@@ -396,3 +396,17 @@ describe('faculty pages', () => {
     await expectNoA11yViolations(container);
   });
 });
+
+describe('example inputs', () => {
+  it('fills the field with one click so users can try a feature without typing', async () => {
+    const { Examples } = await import('../../src/client/components/Examples');
+    const onPick = vi.fn();
+    const { container } = render(
+      <Examples label="Example needs" examples={['Debug I2C signals']} onPick={onPick} />,
+    );
+    expect(screen.getByRole('group', { name: 'Example needs' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Debug I2C signals' }));
+    expect(onPick).toHaveBeenCalledWith('Debug I2C signals');
+    await expectNoA11yViolations(container);
+  });
+});

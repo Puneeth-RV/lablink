@@ -1009,3 +1009,28 @@ select:disabled {
   border-radius: 7px;
   padding: 2px;
 }
+
+/* ---------- Example chips ---------- */
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.example-chip {
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  padding: 0.35rem 0.7rem;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.example-chip:hover {
+  border-style: solid;
+  border-color: var(--primary);
+}
