@@ -64,32 +64,7 @@ Every call uses a JSON schema for structured output, is validated with zod, filt
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    U["Students and faculty<br/>(browser)"] --> SPA["React + TypeScript SPA<br/>persona switcher · light/dark"]
-    SPA -- "HTTPS JSON + signed session token" --> API
-
-    subgraph CR["Google Cloud Run · single container, non-root"]
-        API["Express 5 routes<br/>helmet CSP · zod validation<br/>auth · RBAC · rate limits"]
-        LAB["LabService<br/>(orchestration)"]
-        subgraph DOM["domain/ · pure, tested rules"]
-            POL["policy.ts<br/>hard feasibility rules"]
-            ALLOC["allocation.ts<br/>fair priority score + alternatives"]
-            PLAN["planner.ts<br/>earliest feasible schedule"]
-            UTIL["utilisation.ts · checkin.ts"]
-        end
-        STORE["In-memory working set<br/>(O(1) reads)"]
-        AI["AI assistant<br/>timeout · cache · schema validation<br/>rule-based fallback"]
-        API --> LAB
-        LAB --> POL & ALLOC & PLAN & UTIL
-        LAB --> STORE
-        LAB --> AI
-    end
-
-    AI -- "structured JSON" --> GEM["Gemini Flash-Lite<br/>discovery · project extraction<br/>planning · reviews · explanations"]
-    STORE -- "write-through on every change<br/>load on boot" --> FS[("Firebase Firestore")]
-    SM["Secret Manager<br/>Gemini key · session secret"] -. "injected at runtime" .-> CR
-```
+![LabLink architecture: students and faculty use a React web app over HTTPS; it calls an Express API on Google Cloud Run containing the API layer, allocation engine, project planner and policy rules; the API uses Gemini for discovery, planning and explanations, Firebase Firestore for bookings, requests and approvals, and Secret Manager for API keys.](docs/architecture.jpg)
 
 **Request flow for a contested booking:** the API validates the input and the user's role, then `policy.ts` checks training, approvals, deadline, lab hours and the weekly cap. `allocation.ts` ranks competing requests (deadline 40%, fair share 25%, fit 20%, waiting 15%). The winner's booking is written through to Firestore, and Gemini explains the outcome in plain language. If Gemini is slow or unavailable, a templated explanation is used, so the decision itself never depends on the AI.
 
