@@ -26,7 +26,10 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
       let id = projectId;
       if (mode === 'new') {
         // Gemini extracts title, deadline and equipment needs from the free-text description.
-        const project = await api<Project & { source: 'gemini' | 'rules' }>('/projects', { method: 'POST', body: { description } });
+        const project = await api<Project & { source: 'gemini' | 'rules' }>('/projects', {
+          method: 'POST',
+          body: { description },
+        });
         setCreated(project);
         setProjectId(project.id);
         setMode('existing');
@@ -34,9 +37,17 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
         id = project.id;
         onBooked(); // refresh profile so the new project appears in the list
       }
-      setPlan(await api<PlanResponse>('/plan', { method: 'POST', body: { projectId: id, ...(notes.trim() ? { notes } : {}) } }));
+      setPlan(
+        await api<PlanResponse>('/plan', {
+          method: 'POST',
+          body: { projectId: id, ...(notes.trim() ? { notes } : {}) },
+        }),
+      );
     } catch (err) {
-      const details = err instanceof ApiError && Array.isArray(err.details) ? ` ${err.details.map((d) => d.message).join(' ')}` : '';
+      const details =
+        err instanceof ApiError && Array.isArray(err.details)
+          ? ` ${err.details.map((d) => d.message).join(' ')}`
+          : '';
       setError(`${(err as Error).message}.${details}`);
     } finally {
       setBusy(false);
@@ -51,11 +62,27 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
       try {
         const res = await api<BookingResult>('/bookings', {
           method: 'POST',
-          body: { equipmentId: item.equipmentId, projectId: plan.project.id, start: item.start, end: item.end },
+          body: {
+            equipmentId: item.equipmentId,
+            projectId: plan.project.id,
+            start: item.start,
+            end: item.end,
+          },
         });
-        results.push({ category: item.category, ok: true, message: res.kind === 'booked' ? `Booked ${item.equipmentName}, ${item.label}` : `Joined the fair queue for ${item.equipmentName}, ${item.label}` });
+        results.push({
+          category: item.category,
+          ok: true,
+          message:
+            res.kind === 'booked'
+              ? `Booked ${item.equipmentName}, ${item.label}`
+              : `Joined the fair queue for ${item.equipmentName}, ${item.label}`,
+        });
       } catch (err) {
-        results.push({ category: item.category, ok: false, message: `${item.equipmentName}: ${(err as Error).message}` });
+        results.push({
+          category: item.category,
+          ok: false,
+          message: `${item.equipmentName}: ${(err as Error).message}`,
+        });
       }
     }
     setOutcomes(results);
@@ -69,8 +96,8 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
     <>
       <h1 tabIndex={-1}>Plan my project</h1>
       <p className="muted">
-        LabLink works out which equipment your project needs and finds the earliest slots that fit your deadline, training, approvals and
-        weekly hours.
+        LabLink works out which equipment your project needs and finds the earliest slots that fit your
+        deadline, training, approvals and weekly hours.
       </p>
 
       {
@@ -78,11 +105,24 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
           <fieldset className="segmented">
             <legend className="visually-hidden">Project source</legend>
             <label>
-              <input type="radio" name="mode" value="new" checked={mode === 'new'} onChange={() => setMode('new')} />
+              <input
+                type="radio"
+                name="mode"
+                value="new"
+                checked={mode === 'new'}
+                onChange={() => setMode('new')}
+              />
               Describe a new project
             </label>
             <label>
-              <input type="radio" name="mode" value="existing" checked={mode === 'existing'} disabled={!profile.projects.length} onChange={() => setMode('existing')} />
+              <input
+                type="radio"
+                name="mode"
+                value="existing"
+                checked={mode === 'existing'}
+                disabled={!profile.projects.length}
+                onChange={() => setMode('existing')}
+              />
               Use an existing project
             </label>
           </fieldset>
@@ -101,8 +141,8 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
                 placeholder="e.g. Building a quadcopter frame for my minor project. Need to 3D print the arms and test the ESC signals. Due 5 December."
               />
               <p id="plan-description-hint" className="muted small">
-                Write it the way you would explain it to a friend, including when it is due ("due 5 December", "in 2 weeks"). LabLink
-                works out the title, deadline and equipment you need.
+                Write it the way you would explain it to a friend, including when it is due ("due 5 December",
+                "in 2 weeks"). LabLink works out the title, deadline and equipment you need.
               </p>
             </>
           ) : (
@@ -137,8 +177,10 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
         {created && (
           <Status kind="success">
             Created <strong>{created.title}</strong>, due {formatDate(created.deadline)}
-            {created.essentialCategories.length > 0 && <>, needs {created.essentialCategories.map(titleCase).join(', ')}</>}.{' '}
-            <SourceBadge source={created.source} />
+            {created.essentialCategories.length > 0 && (
+              <>, needs {created.essentialCategories.map(titleCase).join(', ')}</>
+            )}
+            . <SourceBadge source={created.source} />
           </Status>
         )}
         {plan && (
@@ -184,7 +226,12 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
               </tbody>
             </table>
             {schedulable > 0 && (
-              <button type="button" className="btn btn-primary" onClick={() => void bookAll()} disabled={busy || outcomes.length > 0}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void bookAll()}
+                disabled={busy || outcomes.length > 0}
+              >
                 {busy ? 'Booking…' : `Book all ${schedulable} slot${schedulable > 1 ? 's' : ''}`}
               </button>
             )}

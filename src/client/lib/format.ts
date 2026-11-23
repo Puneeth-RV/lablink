@@ -1,14 +1,38 @@
 const TZ = 'Asia/Kolkata';
 
-const dateTime = new Intl.DateTimeFormat('en-IN', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
-const time = new Intl.DateTimeFormat('en-IN', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false });
-const date = new Intl.DateTimeFormat('en-IN', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' });
-const isoDate = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const dateTime = new Intl.DateTimeFormat('en-IN', {
+  timeZone: TZ,
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+const time = new Intl.DateTimeFormat('en-IN', {
+  timeZone: TZ,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+const date = new Intl.DateTimeFormat('en-IN', {
+  timeZone: TZ,
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+const isoDate = new Intl.DateTimeFormat('en-CA', {
+  timeZone: TZ,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 
 export const formatDateTime = (iso: string) => dateTime.format(new Date(iso));
 export const formatTime = (iso: string) => time.format(new Date(iso));
 export const formatDate = (iso: string) => date.format(new Date(iso));
-export const formatSlot = (s: { start: string; end: string }) => `${formatDateTime(s.start)}–${formatTime(s.end)}`;
+export const formatSlot = (s: { start: string; end: string }) =>
+  `${formatDateTime(s.start)}–${formatTime(s.end)}`;
 export const percent = (rate: number) => `${Math.round(rate * 100)}%`;
 
 /** YYYY-MM-DD of the campus day `offsetDays` from now. */

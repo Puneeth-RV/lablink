@@ -25,7 +25,9 @@ export type Route =
   | { name: 'faults' }
   | { name: 'planner' };
 
-type Summary = Partial<Record<'upcoming' | 'queued' | 'awaitingApproval' | 'approvals' | 'conflicts' | 'faults', number>>;
+type Summary = Partial<
+  Record<'upcoming' | 'queued' | 'awaitingApproval' | 'approvals' | 'conflicts' | 'faults', number>
+>;
 
 /** Which summary counts appear as a badge on each nav item. */
 const NAV_COUNTS: Partial<Record<Route['name'], (s: Summary) => number>> = {
@@ -66,7 +68,10 @@ export function App() {
     setSwitching(true);
     setError(undefined);
     try {
-      const { token, profile: next } = await api<{ token: string; profile: Profile }>('/auth/login', { method: 'POST', body: { userId } });
+      const { token, profile: next } = await api<{ token: string; profile: Profile }>('/auth/login', {
+        method: 'POST',
+        body: { userId },
+      });
       session.set(token);
       sessionStorage.setItem(PERSONA_KEY, userId);
       setProfile(next);
@@ -151,7 +156,7 @@ export function App() {
                 >
                   {n.label}
                   {(() => {
-                    const count = summary.data ? NAV_COUNTS[n.route]?.(summary.data) ?? 0 : 0;
+                    const count = summary.data ? (NAV_COUNTS[n.route]?.(summary.data) ?? 0) : 0;
                     return count > 0 ? (
                       <>
                         <span className="nav-count" aria-hidden="true">
@@ -170,7 +175,13 @@ export function App() {
           {profile.user.role === 'student' && (
             <span className="usage">
               <label htmlFor="usage-meter">Lab hours this week</label>
-              <meter id="usage-meter" min={0} max={profile.usage.cap} high={profile.usage.cap * 0.8} value={profile.usage.hours} />
+              <meter
+                id="usage-meter"
+                min={0}
+                max={profile.usage.cap}
+                high={profile.usage.cap * 0.8}
+                value={profile.usage.hours}
+              />
               <span>
                 {profile.usage.hours}/{profile.usage.cap} h
               </span>
@@ -178,7 +189,16 @@ export function App() {
           )}
           {/* Rendered immediately with the current user so the header never changes height (no layout shift). */}
           <PersonaSwitcher
-            users={users.data ?? [{ id: profile.user.id, name: profile.user.name, role: profile.user.role, departmentId: profile.user.departmentId }]}
+            users={
+              users.data ?? [
+                {
+                  id: profile.user.id,
+                  name: profile.user.name,
+                  role: profile.user.role,
+                  departmentId: profile.user.departmentId,
+                },
+              ]
+            }
             currentId={profile.user.id}
             busy={switching || !users.data}
             onSwitch={(id) => void switchPersona(id)}

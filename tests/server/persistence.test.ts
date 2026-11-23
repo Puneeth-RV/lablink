@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../../src/server/config.js';
 import { createSeed } from '../../src/server/data/seed.js';
-import { COLLECTIONS, pruneWorkingSet, SEED_MAX_AGE_MS, WriteThroughPersistence, type DocumentDb } from '../../src/server/services/persistence.js';
+import {
+  COLLECTIONS,
+  pruneWorkingSet,
+  SEED_MAX_AGE_MS,
+  WriteThroughPersistence,
+  type DocumentDb,
+} from '../../src/server/services/persistence.js';
 import { Store, type CollectionName, type SeedData } from '../../src/server/services/store.js';
 import { NOW } from './fixtures.js';
 
@@ -47,11 +53,22 @@ describe('WriteThroughPersistence', () => {
     const first = new WriteThroughPersistence(db);
     const { data } = await first.loadOrSeed(createSeed, NOW);
     const store = new Store(data, first.listener);
-    const booking = store.bookings.insert({ equipmentId: 'ece-iot-1', userId: 'stu-asha', projectId: 'proj-asha-iot', start: new Date(NOW + 86_400_000).toISOString(), end: new Date(NOW + 90_000_000).toISOString(), status: 'confirmed', createdAt: new Date(NOW).toISOString() });
+    const booking = store.bookings.insert({
+      equipmentId: 'ece-iot-1',
+      userId: 'stu-asha',
+      projectId: 'proj-asha-iot',
+      start: new Date(NOW + 86_400_000).toISOString(),
+      end: new Date(NOW + 90_000_000).toISOString(),
+      status: 'confirmed',
+      createdAt: new Date(NOW).toISOString(),
+    });
     store.accessRequests.update('seed-a1', { status: 'approved' });
     await first.flush();
 
-    const { data: reloaded, seeded } = await new WriteThroughPersistence(db).loadOrSeed(createSeed, NOW + 1000);
+    const { data: reloaded, seeded } = await new WriteThroughPersistence(db).loadOrSeed(
+      createSeed,
+      NOW + 1000,
+    );
     expect(seeded).toBe(false);
     expect(reloaded.bookings.find((b) => b.id === booking.id)).toBeDefined();
     expect(reloaded.accessRequests.find((a) => a.id === 'seed-a1')?.status).toBe('approved');
@@ -60,7 +77,10 @@ describe('WriteThroughPersistence', () => {
   it('reseeds stale demo data so dates stay current', async () => {
     const db = new FakeDb();
     await new WriteThroughPersistence(db).loadOrSeed(createSeed, NOW);
-    const { seeded } = await new WriteThroughPersistence(db).loadOrSeed(createSeed, NOW + SEED_MAX_AGE_MS + 1);
+    const { seeded } = await new WriteThroughPersistence(db).loadOrSeed(
+      createSeed,
+      NOW + SEED_MAX_AGE_MS + 1,
+    );
     expect(seeded).toBe(true);
   });
 
@@ -104,13 +124,21 @@ describe('pruneWorkingSet', () => {
 describe('config', () => {
   it('applies safe defaults', () => {
     const c = loadConfig({});
-    expect(c).toMatchObject({ env: 'development', port: 8080, persistence: 'memory', geminiModel: 'gemini-flash-lite-latest' });
+    expect(c).toMatchObject({
+      env: 'development',
+      port: 8080,
+      persistence: 'memory',
+      geminiModel: 'gemini-flash-lite-latest',
+    });
     expect(c.sessionSecret.length).toBeGreaterThanOrEqual(32);
   });
 
   it('requires a session secret in production', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/SESSION_SECRET/);
-    expect(loadConfig({ NODE_ENV: 'production', SESSION_SECRET: 's'.repeat(32), PERSISTENCE: 'firestore' }).persistence).toBe('firestore');
+    expect(
+      loadConfig({ NODE_ENV: 'production', SESSION_SECRET: 's'.repeat(32), PERSISTENCE: 'firestore' })
+        .persistence,
+    ).toBe('firestore');
   });
 
   it('rejects invalid values', () => {

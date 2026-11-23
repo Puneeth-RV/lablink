@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { allocate, conflictGroups, findAlternatives, isSlotFree, scoreRequest } from '../../src/server/domain/allocation.js';
+import {
+  allocate,
+  conflictGroups,
+  findAlternatives,
+  isSlotFree,
+  scoreRequest,
+} from '../../src/server/domain/allocation.js';
 import { checkFeasibility, recentUsageHours, WEEKLY_HOUR_CAP } from '../../src/server/domain/policy.js';
-import { campusTime, candidateSlots, DAY_MS, HOUR_MS, isWithinLabHours, overlaps, toInterval } from '../../src/server/domain/time.js';
+import {
+  campusTime,
+  candidateSlots,
+  DAY_MS,
+  HOUR_MS,
+  isWithinLabHours,
+  overlaps,
+  toInterval,
+} from '../../src/server/domain/time.js';
 import { utilisationReport } from '../../src/server/domain/utilisation.js';
 import type { AllocationContext } from '../../src/server/domain/allocation.js';
 import { booking, equipment, NOW, project, slot, slotRequest, user } from './fixtures.js';
@@ -28,7 +42,14 @@ describe('time', () => {
 });
 
 describe('policy.checkFeasibility', () => {
-  const base = { now: NOW, user: user(), project: project(), equipment: equipment(), userBookings: [], accessRequests: [] };
+  const base = {
+    now: NOW,
+    user: user(),
+    project: project(),
+    equipment: equipment(),
+    userBookings: [],
+    accessRequests: [],
+  };
 
   it('passes a valid slot', () => {
     expect(checkFeasibility(toInterval(slot(1, 10)), base)).toEqual([]);
@@ -41,26 +62,50 @@ describe('policy.checkFeasibility', () => {
       project: project({ ownerId: 'someone-else' }),
     });
     expect(v).toEqual(
-      expect.arrayContaining(['EQUIPMENT_UNAVAILABLE', 'INVALID_DURATION', 'IN_PAST', 'NOT_PROJECT_OWNER', 'TRAINING_REQUIRED', 'APPROVAL_REQUIRED']),
+      expect.arrayContaining([
+        'EQUIPMENT_UNAVAILABLE',
+        'INVALID_DURATION',
+        'IN_PAST',
+        'NOT_PROJECT_OWNER',
+        'TRAINING_REQUIRED',
+        'APPROVAL_REQUIRED',
+      ]),
     );
   });
 
   it('rejects slots after the project deadline', () => {
-    expect(checkFeasibility(toInterval(slot(1, 10)), { ...base, project: project({ deadline: slot(1, 9).start }) })).toContain(
-      'AFTER_DEADLINE',
-    );
+    expect(
+      checkFeasibility(toInterval(slot(1, 10)), {
+        ...base,
+        project: project({ deadline: slot(1, 9).start }),
+      }),
+    ).toContain('AFTER_DEADLINE');
   });
 
   it('allows approval-gated equipment once access is approved', () => {
     const eq = equipment({ requiresApproval: true });
-    const approved = { id: 'a', equipmentId: eq.id, userId: 'stu-1', projectId: 'proj-1', justification: 'x', status: 'approved' as const, createdAt: '' };
-    expect(checkFeasibility(toInterval(slot(1, 10)), { ...base, equipment: eq, accessRequests: [approved] })).toEqual([]);
+    const approved = {
+      id: 'a',
+      equipmentId: eq.id,
+      userId: 'stu-1',
+      projectId: 'proj-1',
+      justification: 'x',
+      status: 'approved' as const,
+      createdAt: '',
+    };
+    expect(
+      checkFeasibility(toInterval(slot(1, 10)), { ...base, equipment: eq, accessRequests: [approved] }),
+    ).toEqual([]);
   });
 
   it('enforces the weekly fair-use cap', () => {
-    const heavy = Array.from({ length: 4 }, (_, d) => booking({ id: `h${d}`, userId: 'stu-1', ...slot(d + 1, 9, 3) }));
+    const heavy = Array.from({ length: 4 }, (_, d) =>
+      booking({ id: `h${d}`, userId: 'stu-1', ...slot(d + 1, 9, 3) }),
+    );
     expect(recentUsageHours(heavy, NOW)).toBe(WEEKLY_HOUR_CAP);
-    expect(checkFeasibility(toInterval(slot(6, 14)), { ...base, userBookings: heavy })).toContain('WEEKLY_CAP');
+    expect(checkFeasibility(toInterval(slot(6, 14)), { ...base, userBookings: heavy })).toContain(
+      'WEEKLY_CAP',
+    );
   });
 });
 
@@ -68,7 +113,9 @@ describe('allocation.scoreRequest', () => {
   const input = { now: NOW, deadline: NOW + 20 * DAY_MS, usageHours: 0, essential: true, createdAt: NOW };
 
   it('prioritises closer deadlines', () => {
-    expect(scoreRequest({ ...input, deadline: NOW + 2 * DAY_MS }).total).toBeGreaterThan(scoreRequest(input).total);
+    expect(scoreRequest({ ...input, deadline: NOW + 2 * DAY_MS }).total).toBeGreaterThan(
+      scoreRequest(input).total,
+    );
   });
 
   it('prioritises students who have used less lab time', () => {
@@ -80,7 +127,12 @@ describe('allocation.scoreRequest', () => {
   });
 
   it('keeps every factor within [0, 1]', () => {
-    const s = scoreRequest({ ...input, deadline: NOW - DAY_MS, usageHours: 99, createdAt: NOW - 30 * DAY_MS });
+    const s = scoreRequest({
+      ...input,
+      deadline: NOW - DAY_MS,
+      usageHours: 99,
+      createdAt: NOW - 30 * DAY_MS,
+    });
     for (const v of Object.values(s)) {
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThanOrEqual(1);
@@ -97,7 +149,10 @@ describe('allocation.allocate', () => {
     equipment: new Map([eqA, eqB].map((e) => [e.id, e])),
     users: new Map([user(), urgent].map((u) => [u.id, u])),
     projects: new Map(
-      [project(), project({ id: 'proj-2', ownerId: 'stu-2', deadline: new Date(NOW + 2 * DAY_MS).toISOString() })].map((p) => [p.id, p]),
+      [
+        project(),
+        project({ id: 'proj-2', ownerId: 'stu-2', deadline: new Date(NOW + 2 * DAY_MS).toISOString() }),
+      ].map((p) => [p.id, p]),
     ),
     bookings: [],
     accessRequests: [],
@@ -113,7 +168,11 @@ describe('allocation.allocate', () => {
     expect(first?.outcome.decision).toBe('allocated');
     expect(second?.outcome.decision).toBe('declined');
     expect(second?.outcome.alternatives.length).toBeGreaterThan(0);
-    expect(second?.outcome.alternatives.some((a) => a.kind === 'equivalent-equipment' && a.equipmentId === 'osc-2')).toBe(true);
+    expect(
+      second?.outcome.alternatives.some(
+        (a) => a.kind === 'equivalent-equipment' && a.equipmentId === 'osc-2',
+      ),
+    ).toBe(true);
   });
 
   it('is deterministic regardless of input order', () => {
@@ -185,7 +244,12 @@ describe('utilisation', () => {
     const busy = equipment({ id: 'busy', name: 'Busy scope' });
     const idle = equipment({ id: 'idle', name: 'Idle scope' });
     const window = { start: campusTime(NOW, 1, 0), end: campusTime(NOW, 2, 0) };
-    const report = utilisationReport(window, [busy, idle], [booking({ equipmentId: 'busy', ...slot(1, 9, 9) })], [{ id: 'ece', name: 'ECE' }]);
+    const report = utilisationReport(
+      window,
+      [busy, idle],
+      [booking({ equipmentId: 'busy', ...slot(1, 9, 9) })],
+      [{ id: 'ece', name: 'ECE' }],
+    );
 
     expect(report.equipment.find((e) => e.equipmentId === 'busy')?.rate).toBe(1);
     expect(report.departments[0]?.rate).toBe(0.5);

@@ -4,8 +4,20 @@ import { api, type Activity } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { downloadIcs } from '../lib/ics';
 
-const TONE = { pending: 'warn', allocated: 'ok', approved: 'ok', declined: 'danger', rejected: 'danger' } as const;
-const LABEL = { pending: 'In queue', allocated: 'Allocated', approved: 'Approved', declined: 'Declined', rejected: 'Rejected' } as const;
+const TONE = {
+  pending: 'warn',
+  allocated: 'ok',
+  approved: 'ok',
+  declined: 'danger',
+  rejected: 'danger',
+} as const;
+const LABEL = {
+  pending: 'In queue',
+  allocated: 'Allocated',
+  approved: 'Approved',
+  declined: 'Declined',
+  rejected: 'Rejected',
+} as const;
 
 export function ActivityPage({ onChanged }: { onChanged: () => void }) {
   const activity = useResource<Activity>('/activity');
@@ -35,7 +47,10 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
   return (
     <>
       <h1 tabIndex={-1}>My bookings</h1>
-      <p className="muted small">Check in from 10 minutes before your slot. Bookings not checked in within 15 minutes are released to others.</p>
+      <p className="muted small">
+        Check in from 10 minutes before your slot. Bookings not checked in within 15 minutes are released to
+        others.
+      </p>
       <div aria-live="polite">{message && <Status kind={message.kind}>{message.text}</Status>}</div>
       {activity.loading && <Loading />}
       {activity.error && <Status kind="error">{activity.error}</Status>}
@@ -43,19 +58,27 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
         <>
           <ul className="stat-grid" aria-label="Summary">
             <li className="stat tone-ok">
-              <span className="stat-value">{activity.data.bookings.filter((b) => b.upcoming || b.canCheckIn).length}</span>
+              <span className="stat-value">
+                {activity.data.bookings.filter((b) => b.upcoming || b.canCheckIn).length}
+              </span>
               <span className="stat-label">Confirmed upcoming</span>
             </li>
             <li className="stat tone-warn">
-              <span className="stat-value">{activity.data.slotRequests.filter((r) => r.status === 'pending').length}</span>
+              <span className="stat-value">
+                {activity.data.slotRequests.filter((r) => r.status === 'pending').length}
+              </span>
               <span className="stat-label">In fair queue</span>
             </li>
             <li className="stat tone-info">
-              <span className="stat-value">{activity.data.accessRequests.filter((a) => a.status === 'pending').length}</span>
+              <span className="stat-value">
+                {activity.data.accessRequests.filter((a) => a.status === 'pending').length}
+              </span>
               <span className="stat-label">Awaiting approval</span>
             </li>
             <li className="stat tone-danger">
-              <span className="stat-value">{activity.data.slotRequests.filter((r) => r.status === 'declined').length}</span>
+              <span className="stat-value">
+                {activity.data.slotRequests.filter((r) => r.status === 'declined').length}
+              </span>
               <span className="stat-label">Declined — see alternatives</span>
             </li>
           </ul>
@@ -75,7 +98,12 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
                     <span className="actions">
                       {b.checkedInAt && <Badge tone="ok">Checked in</Badge>}
                       {b.canCheckIn && (
-                        <button type="button" className="btn btn-primary btn-small" onClick={() => void checkIn(b.id, b.equipmentName)} aria-label={`Check in to ${b.equipmentName}`}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-small"
+                          onClick={() => void checkIn(b.id, b.equipmentName)}
+                          aria-label={`Check in to ${b.equipmentName}`}
+                        >
                           Check in
                         </button>
                       )}
@@ -84,13 +112,25 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
                         className="btn btn-small"
                         aria-label={`Add ${b.equipmentName} on ${b.label} to calendar`}
                         onClick={() =>
-                          downloadIcs({ uid: b.id, title: `Lab: ${b.equipmentName}`, location: b.equipmentName, description: `LabLink booking for ${b.projectTitle}`, start: b.start, end: b.end })
+                          downloadIcs({
+                            uid: b.id,
+                            title: `Lab: ${b.equipmentName}`,
+                            location: b.equipmentName,
+                            description: `LabLink booking for ${b.projectTitle}`,
+                            start: b.start,
+                            end: b.end,
+                          })
                         }
                       >
                         Add to calendar
                       </button>
                       {b.upcoming && (
-                        <button type="button" className="btn btn-ghost btn-small" onClick={() => cancel(b.id, b.label)} aria-label={`Cancel ${b.equipmentName} on ${b.label}`}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-small"
+                          onClick={() => cancel(b.id, b.label)}
+                          aria-label={`Cancel ${b.equipmentName} on ${b.label}`}
+                        >
                           Cancel
                         </button>
                       )}
@@ -110,7 +150,8 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
                 {activity.data.slotRequests.map((r) => (
                   <li key={r.id} className="card">
                     <p>
-                      <strong>{r.equipmentName}</strong> · {r.label} <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>
+                      <strong>{r.equipmentName}</strong> · {r.label}{' '}
+                      <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>
                     </p>
                     <p className="muted small">{r.projectTitle}</p>
                     {r.outcome?.explanation && <p className="explanation">{r.outcome.explanation}</p>}
@@ -131,7 +172,10 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
                 {activity.data.accessRequests.map((a) => (
                   <li key={a.id} className="card">
                     <p>
-                      <strong>{a.equipmentName}</strong> for {a.projectTitle} <Badge tone={a.status === 'pending' ? 'info' : TONE[a.status]}>{a.status === 'pending' ? 'Awaiting approval' : LABEL[a.status]}</Badge>
+                      <strong>{a.equipmentName}</strong> for {a.projectTitle}{' '}
+                      <Badge tone={a.status === 'pending' ? 'info' : TONE[a.status]}>
+                        {a.status === 'pending' ? 'Awaiting approval' : LABEL[a.status]}
+                      </Badge>
                     </p>
                     {a.decisionNote && <p className="muted">Faculty note: {a.decisionNote}</p>}
                     {a.aiReview && (

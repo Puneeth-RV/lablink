@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Alternatives, Badge, Loading, ScoreBreakdownView, SourceBadge, Status, ViolationList } from '../components/ui';
+import {
+  Alternatives,
+  Badge,
+  Loading,
+  ScoreBreakdownView,
+  SourceBadge,
+  Status,
+  ViolationList,
+} from '../components/ui';
 import { api, type ConflictGroup } from '../lib/api';
 import { daysUntil, percent } from '../lib/format';
 import { useResource } from '../lib/hooks';
@@ -14,7 +22,10 @@ export default function ConflictsPage() {
     setBusy(id);
     setError(undefined);
     try {
-      const result = await api<ConflictGroup>('/conflicts/resolve', { method: 'POST', body: { groupId: id } });
+      const result = await api<ConflictGroup>('/conflicts/resolve', {
+        method: 'POST',
+        body: { groupId: id },
+      });
       setResolved((r) => [result, ...r]);
       groups.reload();
     } catch (err) {
@@ -28,15 +39,16 @@ export default function ConflictsPage() {
     <>
       <h1 tabIndex={-1}>Scheduling conflicts</h1>
       <p className="muted">
-        Overlapping requests for high-demand equipment. LabLink ranks them by deadline urgency (40%), fair share of lab time (25%),
-        requirement fit (20%) and waiting time (15%), after checking hard rules such as training, approvals and deadlines. Everyone who
-        misses out gets feasible alternatives.
+        Overlapping requests for high-demand equipment. LabLink ranks them by deadline urgency (40%), fair
+        share of lab time (25%), requirement fit (20%) and waiting time (15%), after checking hard rules such
+        as training, approvals and deadlines. Everyone who misses out gets feasible alternatives.
       </p>
       <div aria-live="polite">
         {error && <Status kind="error">{error}</Status>}
         {resolved.map((g) => (
           <Status key={g.id} kind="success">
-            <strong>Allocated {g.equipmentName}</strong> ({g.label}). {g.explanation} {g.explanationSource && <SourceBadge source={g.explanationSource} />}
+            <strong>Allocated {g.equipmentName}</strong> ({g.label}). {g.explanation}{' '}
+            {g.explanationSource && <SourceBadge source={g.explanationSource} />}
           </Status>
         ))}
       </div>
@@ -56,7 +68,11 @@ export default function ConflictsPage() {
                     #{i + 1} {r.studentName}
                   </strong>{' '}
                   — {r.projectTitle} · {r.label} · deadline in {daysUntil(r.deadline)} days{' '}
-                  {r.decision === 'allocated' ? <Badge tone="ok">Proposed: allocate</Badge> : <Badge tone="danger">Proposed: alternatives</Badge>}
+                  {r.decision === 'allocated' ? (
+                    <Badge tone="ok">Proposed: allocate</Badge>
+                  ) : (
+                    <Badge tone="danger">Proposed: alternatives</Badge>
+                  )}
                   {r.score && <span className="score-total"> Score {percent(r.score.total)}</span>}
                 </p>
                 {r.score && <ScoreBreakdownView score={r.score} />}
@@ -70,7 +86,12 @@ export default function ConflictsPage() {
               </li>
             ))}
           </ol>
-          <button type="button" className="btn btn-primary" onClick={() => resolve(g.id)} disabled={busy === g.id}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => resolve(g.id)}
+            disabled={busy === g.id}
+          >
             {busy === g.id ? 'Allocating…' : 'Apply fair allocation'}
           </button>
         </section>

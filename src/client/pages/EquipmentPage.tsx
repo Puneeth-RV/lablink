@@ -1,12 +1,35 @@
 import { useState, type FormEvent } from 'react';
 import { EquipmentMedia } from '../components/EquipmentMedia';
 import { Alternatives, Badge, Loading, Status, ViolationList } from '../components/ui';
-import { api, ApiError, type AccessRequest, type Activity, type BookingResult, type Equipment, type NamedAlternative, type Profile, type Slot } from '../lib/api';
-import { campusDate, campusIso, campusParts, formatDate, formatSlot, formatTime, titleCase } from '../lib/format';
+import {
+  api,
+  ApiError,
+  type AccessRequest,
+  type Activity,
+  type BookingResult,
+  type Equipment,
+  type NamedAlternative,
+  type Profile,
+  type Slot,
+} from '../lib/api';
+import {
+  campusDate,
+  campusIso,
+  campusParts,
+  formatDate,
+  formatSlot,
+  formatTime,
+  titleCase,
+} from '../lib/format';
 import { useResource } from '../lib/hooks';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17];
-const STATUS_TEXT: Record<Slot['status'], string> = { free: 'Free', booked: 'Booked', past: 'Past', unavailable: 'Unavailable' };
+const STATUS_TEXT: Record<Slot['status'], string> = {
+  free: 'Free',
+  booked: 'Booked',
+  past: 'Past',
+  unavailable: 'Unavailable',
+};
 
 interface Props {
   id: string;
@@ -39,10 +62,13 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
   const [accessResult, setAccessResult] = useState<{ kind: 'success' | 'error'; message: string }>();
 
   if (equipment.loading) return <Loading />;
-  if (equipment.error || !equipment.data) return <Status kind="error">{equipment.error ?? 'Not found'}</Status>;
+  if (equipment.error || !equipment.data)
+    return <Status kind="error">{equipment.error ?? 'Not found'}</Status>;
   const e = equipment.data;
 
-  const access = activity.data?.accessRequests.find((a) => a.equipmentId === e.id && a.projectId === projectId);
+  const access = activity.data?.accessRequests.find(
+    (a) => a.equipmentId === e.id && a.projectId === projectId,
+  );
   const trained = !e.requiredTraining || profile.user.trainings.includes(e.requiredTraining);
 
   async function book(ev: FormEvent) {
@@ -52,7 +78,12 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
     try {
       const res = await api<BookingResult>('/bookings', {
         method: 'POST',
-        body: { equipmentId: e.id, projectId, start: campusIso(day, hour), end: campusIso(day, hour + hours) },
+        body: {
+          equipmentId: e.id,
+          projectId,
+          start: campusIso(day, hour),
+          end: campusIso(day, hour + hours),
+        },
       });
       setOutcome({
         kind: 'success',
@@ -65,7 +96,12 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
       onBooked();
     } catch (err) {
       const details = err instanceof ApiError && !Array.isArray(err.details) ? err.details : undefined;
-      setOutcome({ kind: 'error', message: (err as Error).message, violations: details?.violations ?? [], alternatives: details?.alternatives ?? [] });
+      setOutcome({
+        kind: 'error',
+        message: (err as Error).message,
+        violations: details?.violations ?? [],
+        alternatives: details?.alternatives ?? [],
+      });
     } finally {
       setBusy(false);
     }
@@ -86,7 +122,10 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
       setFaultResult({ kind: 'success', message: 'Thanks — the department has been notified.' });
       setFault('');
     } catch (err) {
-      const details = err instanceof ApiError && Array.isArray(err.details) ? err.details.map((d) => d.message).join(' ') : '';
+      const details =
+        err instanceof ApiError && Array.isArray(err.details)
+          ? err.details.map((d) => d.message).join(' ')
+          : '';
       setFaultResult({ kind: 'error', message: `${(err as Error).message}. ${details}`.trim() });
     }
   }
@@ -95,12 +134,18 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
     ev.preventDefault();
     setAccessResult(undefined);
     try {
-      await api<AccessRequest>('/access-requests', { method: 'POST', body: { equipmentId: e.id, projectId, justification } });
+      await api<AccessRequest>('/access-requests', {
+        method: 'POST',
+        body: { equipmentId: e.id, projectId, justification },
+      });
       setAccessResult({ kind: 'success', message: 'Request sent to faculty for approval.' });
       setJustification('');
       activity.reload();
     } catch (err) {
-      const details = err instanceof ApiError && Array.isArray(err.details) ? err.details.map((d) => d.message).join(' ') : '';
+      const details =
+        err instanceof ApiError && Array.isArray(err.details)
+          ? err.details.map((d) => d.message).join(' ')
+          : '';
       setAccessResult({ kind: 'error', message: `${(err as Error).message}. ${details}`.trim() });
     }
   }
@@ -125,11 +170,17 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
           </p>
         </div>
       </div>
-      {e.status === 'maintenance' && <Status kind="error">This equipment is under maintenance and cannot be booked.</Status>}
+      {e.status === 'maintenance' && (
+        <Status kind="error">This equipment is under maintenance and cannot be booked.</Status>
+      )}
       {e.requiredTraining && (
         <p>
           Requires <strong>{titleCase(e.requiredTraining)}</strong> training —{' '}
-          {isStudent ? (trained ? 'you have completed it.' : 'you have not completed it yet.') : 'checked automatically at booking.'}
+          {isStudent
+            ? trained
+              ? 'you have completed it.'
+              : 'you have not completed it yet.'
+            : 'checked automatically at booking.'}
         </p>
       )}
 
@@ -137,7 +188,13 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
         <section aria-labelledby="avail-heading" className="card">
           <h2 id="avail-heading">Availability</h2>
           <label htmlFor="day">Date</label>
-          <input id="day" type="date" value={day} min={campusDate(0)} onChange={(ev) => ev.target.value && setDay(ev.target.value)} />
+          <input
+            id="day"
+            type="date"
+            value={day}
+            min={campusDate(0)}
+            onChange={(ev) => ev.target.value && setDay(ev.target.value)}
+          />
           {availability.loading && <Loading />}
           {availability.error && <Status kind="error">{availability.error}</Status>}
           {availability.data && (
@@ -172,8 +229,8 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
             <h2 id="book-heading">{e.highDemand ? 'Request a slot' : 'Book a slot'}</h2>
             {e.highDemand && (
               <p className="muted small">
-                High-demand equipment is not first-come-first-served: overlapping requests are allocated fairly by deadline urgency, fair
-                share of lab time, requirement fit and waiting time.
+                High-demand equipment is not first-come-first-served: overlapping requests are allocated
+                fairly by deadline urgency, fair share of lab time, requirement fit and waiting time.
               </p>
             )}
             {profile.projects.length === 0 ? (
@@ -224,7 +281,9 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
                   </p>
                   <ViolationList items={outcome.violations} />
                   {outcome.alternatives.length > 0 && <p>Feasible alternatives:</p>}
-                  {outcome.alternatives.length > 0 && <Alternatives items={outcome.alternatives} onPick={pick} />}
+                  {outcome.alternatives.length > 0 && (
+                    <Alternatives items={outcome.alternatives} onPick={pick} />
+                  )}
                 </div>
               )}
             </div>
@@ -237,12 +296,19 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
           <h2 id="access-heading">Project access</h2>
           {access ? (
             <p>
-              Access for this project: <Badge tone={access.status === 'approved' ? 'ok' : access.status === 'rejected' ? 'danger' : 'warn'}>{access.status}</Badge>
+              Access for this project:{' '}
+              <Badge
+                tone={access.status === 'approved' ? 'ok' : access.status === 'rejected' ? 'danger' : 'warn'}
+              >
+                {access.status}
+              </Badge>
               {access.decisionNote && <span className="muted"> — “{access.decisionNote}”</span>}
             </p>
           ) : (
             <form onSubmit={requestAccess}>
-              <p className="muted small">This equipment needs faculty approval for the selected project before booking.</p>
+              <p className="muted small">
+                This equipment needs faculty approval for the selected project before booking.
+              </p>
               <label htmlFor="justification">Why does your project need it?</label>
               <textarea
                 id="justification"
@@ -258,19 +324,31 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
               </button>
             </form>
           )}
-          <div aria-live="polite">{accessResult && <Status kind={accessResult.kind}>{accessResult.message}</Status>}</div>
+          <div aria-live="polite">
+            {accessResult && <Status kind={accessResult.kind}>{accessResult.message}</Status>}
+          </div>
         </section>
       )}
       <details className="card">
         <summary>Report a problem with this equipment</summary>
         <form onSubmit={reportFault}>
           <label htmlFor="fault">What is wrong?</label>
-          <textarea id="fault" rows={2} minLength={10} maxLength={500} required value={fault} onChange={(ev) => setFault(ev.target.value)} />
+          <textarea
+            id="fault"
+            rows={2}
+            minLength={10}
+            maxLength={500}
+            required
+            value={fault}
+            onChange={(ev) => setFault(ev.target.value)}
+          />
           <button type="submit" className="btn">
             Send report
           </button>
         </form>
-        <div aria-live="polite">{faultResult && <Status kind={faultResult.kind}>{faultResult.message}</Status>}</div>
+        <div aria-live="polite">
+          {faultResult && <Status kind={faultResult.kind}>{faultResult.message}</Status>}
+        </div>
       </details>
     </>
   );

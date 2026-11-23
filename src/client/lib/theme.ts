@@ -16,7 +16,9 @@ export function applyTheme(theme: Theme): void {
 }
 
 export function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme as Theme) ?? initialTheme());
+  const [theme, setTheme] = useState<Theme>(
+    () => (document.documentElement.dataset.theme as Theme) ?? initialTheme(),
+  );
   const toggle = useCallback(() => {
     setTheme((t) => {
       const next = t === 'dark' ? 'light' : 'dark';

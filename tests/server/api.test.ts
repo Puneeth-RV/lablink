@@ -16,7 +16,12 @@ const at = (day: number, hour: number, hours = 1) => {
 let app: ReturnType<typeof createApp>;
 
 beforeEach(() => {
-  app = createApp({ store: new Store(createSeed(NOW)), ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => NOW });
+  app = createApp({
+    store: new Store(createSeed(NOW)),
+    ai: new RulesAssistant(),
+    sessionSecret: SECRET,
+    clock: () => NOW,
+  });
 });
 
 async function login(userId: string): Promise<string> {
@@ -57,7 +62,11 @@ describe('authentication', () => {
   });
 
   it('rejects oversized payloads', async () => {
-    await request(app).post('/api/discover').set('Authorization', `Bearer ${await login('stu-asha')}`).send({ query: 'x'.repeat(20_000) }).expect(400);
+    await request(app)
+      .post('/api/discover')
+      .set('Authorization', `Bearer ${await login('stu-asha')}`)
+      .send({ query: 'x'.repeat(20_000) })
+      .expect(400);
   });
 });
 
@@ -78,20 +87,30 @@ describe('role-based access control', () => {
 describe('discovery', () => {
   it('filters the catalogue', async () => {
     const token = await login('stu-asha');
-    const res = await request(app).get('/api/equipment?category=oscilloscope').set('Authorization', `Bearer ${token}`).expect(200);
+    const res = await request(app)
+      .get('/api/equipment?category=oscilloscope')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
     expect(res.body.every((e: { category: string }) => e.category === 'oscilloscope')).toBe(true);
   });
 
   it('recommends equipment from a natural-language need', async () => {
     const token = await login('stu-ravi');
-    const res = await request(app).post('/api/discover').set('Authorization', `Bearer ${token}`).send({ query: 'train a deep learning vision model' }).expect(200);
+    const res = await request(app)
+      .post('/api/discover')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ query: 'train a deep learning vision model' })
+      .expect(200);
     expect(res.body.matches[0].equipment.category).toBe('gpu-workstation');
   });
 
   it('shows hourly availability', async () => {
     const token = await login('stu-asha');
     const date = new Date(campusTime(NOW, 1, 12)).toISOString().slice(0, 10);
-    const res = await request(app).get(`/api/equipment/ece-osc-1/availability?date=${date}`).set('Authorization', `Bearer ${token}`).expect(200);
+    const res = await request(app)
+      .get(`/api/equipment/ece-osc-1/availability?date=${date}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
     expect(res.body.slots).toHaveLength(9);
     expect(res.body.slots.find((s: { start: string }) => s.start === at(1, 14).start).status).toBe('booked');
   });
@@ -122,7 +141,11 @@ describe('booking', () => {
     const token = await login('stu-asha');
     const body = { equipmentId: 'ece-iot-1', projectId: 'proj-asha-iot', ...at(1, 9, 2) };
     await request(app).post('/api/bookings').set('Authorization', `Bearer ${token}`).send(body).expect(201);
-    const res = await request(app).post('/api/bookings').set('Authorization', `Bearer ${token}`).send({ ...body, ...at(1, 10) }).expect(409);
+    const res = await request(app)
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...body, ...at(1, 10) })
+      .expect(409);
     expect(res.body.error.details.alternatives.length).toBeGreaterThan(0);
   });
 
@@ -164,8 +187,14 @@ describe('booking', () => {
       .send({ equipmentId: 'ece-iot-1', projectId: 'proj-asha-iot', ...at(1, 9) })
       .expect(201);
     const id = created.body.booking.id as string;
-    await request(app).delete(`/api/bookings/${id}`).set('Authorization', `Bearer ${await login('stu-ravi')}`).expect(404);
-    const res = await request(app).delete(`/api/bookings/${id}`).set('Authorization', `Bearer ${asha}`).expect(200);
+    await request(app)
+      .delete(`/api/bookings/${id}`)
+      .set('Authorization', `Bearer ${await login('stu-ravi')}`)
+      .expect(404);
+    const res = await request(app)
+      .delete(`/api/bookings/${id}`)
+      .set('Authorization', `Bearer ${asha}`)
+      .expect(200);
     expect(res.body.status).toBe('cancelled');
   });
 });
@@ -176,15 +205,26 @@ describe('access requests and approvals', () => {
     const res = await request(app)
       .post('/api/access-requests')
       .set('Authorization', `Bearer ${asha}`)
-      .send({ equipmentId: 'ece-sa-1', projectId: 'proj-asha-iot', justification: 'Measure the 2.4 GHz Wi-Fi emissions of my irrigation node.' })
+      .send({
+        equipmentId: 'ece-sa-1',
+        projectId: 'proj-asha-iot',
+        justification: 'Measure the 2.4 GHz Wi-Fi emissions of my irrigation node.',
+      })
       .expect(201);
     expect(res.body.aiReview.summary).toContain('Spectrum Analyzer');
 
     const faculty = await login('fac-iyer');
-    const queue = await request(app).get('/api/approvals').set('Authorization', `Bearer ${faculty}`).expect(200);
+    const queue = await request(app)
+      .get('/api/approvals')
+      .set('Authorization', `Bearer ${faculty}`)
+      .expect(200);
     expect(queue.body.map((a: { id: string }) => a.id)).toContain(res.body.id);
 
-    await request(app).post(`/api/approvals/${res.body.id}`).set('Authorization', `Bearer ${faculty}`).send({ decision: 'approved' }).expect(200);
+    await request(app)
+      .post(`/api/approvals/${res.body.id}`)
+      .set('Authorization', `Bearer ${faculty}`)
+      .send({ decision: 'approved' })
+      .expect(200);
     await request(app)
       .post('/api/bookings')
       .set('Authorization', `Bearer ${asha}`)
@@ -194,9 +234,16 @@ describe('access requests and approvals', () => {
 
   it('hides other departments’ requests from faculty', async () => {
     const mechFaculty = await login('fac-das');
-    const res = await request(app).get('/api/approvals').set('Authorization', `Bearer ${mechFaculty}`).expect(200);
+    const res = await request(app)
+      .get('/api/approvals')
+      .set('Authorization', `Bearer ${mechFaculty}`)
+      .expect(200);
     expect(res.body.every((a: { equipmentId: string }) => a.equipmentId.startsWith('mech-'))).toBe(true);
-    await request(app).post('/api/approvals/seed-a1').set('Authorization', `Bearer ${mechFaculty}`).send({ decision: 'approved' }).expect(404);
+    await request(app)
+      .post('/api/approvals/seed-a1')
+      .set('Authorization', `Bearer ${mechFaculty}`)
+      .send({ decision: 'approved' })
+      .expect(404);
   });
 
   it('rejects requests for equipment that does not need approval', async () => {
@@ -204,7 +251,11 @@ describe('access requests and approvals', () => {
     await request(app)
       .post('/api/access-requests')
       .set('Authorization', `Bearer ${asha}`)
-      .send({ equipmentId: 'ece-iot-1', projectId: 'proj-asha-iot', justification: 'A long enough justification text here.' })
+      .send({
+        equipmentId: 'ece-iot-1',
+        projectId: 'proj-asha-iot',
+        justification: 'A long enough justification text here.',
+      })
       .expect(422);
   });
 });
@@ -212,29 +263,52 @@ describe('access requests and approvals', () => {
 describe('conflict resolution', () => {
   it('previews and commits a fair allocation with an explanation', async () => {
     const faculty = await login('fac-iyer');
-    const preview = await request(app).get('/api/conflicts').set('Authorization', `Bearer ${faculty}`).expect(200);
+    const preview = await request(app)
+      .get('/api/conflicts')
+      .set('Authorization', `Bearer ${faculty}`)
+      .expect(200);
     const group = preview.body[0];
     expect(group.ranking.length).toBeGreaterThan(1);
     expect(group.ranking[0].decision).toBe('allocated');
 
-    const resolved = await request(app).post('/api/conflicts/resolve').set('Authorization', `Bearer ${faculty}`).send({ groupId: group.id }).expect(200);
+    const resolved = await request(app)
+      .post('/api/conflicts/resolve')
+      .set('Authorization', `Bearer ${faculty}`)
+      .send({ groupId: group.id })
+      .expect(200);
     expect(resolved.body.explanation).toBeTruthy();
 
-    const after = await request(app).get('/api/conflicts').set('Authorization', `Bearer ${faculty}`).expect(200);
+    const after = await request(app)
+      .get('/api/conflicts')
+      .set('Authorization', `Bearer ${faculty}`)
+      .expect(200);
     expect(after.body.find((g: { id: string }) => g.id === group.id)).toBeUndefined();
 
-    const ids: Record<string, string> = { 'Meera Joshi': 'stu-meera', 'Asha Nair': 'stu-asha', 'Ravi Kumar': 'stu-ravi' };
+    const ids: Record<string, string> = {
+      'Meera Joshi': 'stu-meera',
+      'Asha Nair': 'stu-asha',
+      'Ravi Kumar': 'stu-ravi',
+    };
     const winner = await login(ids[group.ranking[0].studentName as string]!);
-    const activity = await request(app).get('/api/activity').set('Authorization', `Bearer ${winner}`).expect(200);
+    const activity = await request(app)
+      .get('/api/activity')
+      .set('Authorization', `Bearer ${winner}`)
+      .expect(200);
     expect(activity.body.slotRequests.some((r: { status: string }) => r.status === 'allocated')).toBe(true);
   });
 });
 
 describe('summary counts', () => {
   it('returns role-specific counts for navigation badges', async () => {
-    const student = await request(app).get('/api/summary').set('Authorization', `Bearer ${await login('stu-asha')}`).expect(200);
+    const student = await request(app)
+      .get('/api/summary')
+      .set('Authorization', `Bearer ${await login('stu-asha')}`)
+      .expect(200);
     expect(student.body).toEqual({ upcoming: 0, queued: 1, awaitingApproval: 1 });
-    const faculty = await request(app).get('/api/summary').set('Authorization', `Bearer ${await login('fac-iyer')}`).expect(200);
+    const faculty = await request(app)
+      .get('/api/summary')
+      .set('Authorization', `Bearer ${await login('fac-iyer')}`)
+      .expect(200);
     expect(faculty.body).toMatchObject({ approvals: 1, conflicts: 1, faults: 1 });
   });
 });
@@ -242,7 +316,10 @@ describe('summary counts', () => {
 describe('analytics', () => {
   it('reports utilisation with rebalancing suggestions', async () => {
     const faculty = await login('fac-khan');
-    const res = await request(app).get('/api/analytics/utilisation').set('Authorization', `Bearer ${faculty}`).expect(200);
+    const res = await request(app)
+      .get('/api/analytics/utilisation')
+      .set('Authorization', `Bearer ${faculty}`)
+      .expect(200);
     expect(res.body.equipment.length).toBeGreaterThan(0);
     expect(res.body.suggestions.some((s: string) => s.includes('Keysight'))).toBe(true);
   });

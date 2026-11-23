@@ -9,7 +9,11 @@ import { Store } from './services/store.js';
 
 const config = loadConfig();
 const ai = config.geminiApiKey
-  ? new GeminiAssistant(geminiTransport(config.geminiApiKey, config.geminiModel), new RulesAssistant(), config.geminiTimeoutMs)
+  ? new GeminiAssistant(
+      geminiTransport(config.geminiApiKey, config.geminiModel),
+      new RulesAssistant(),
+      config.geminiTimeoutMs,
+    )
   : new RulesAssistant();
 
 /** Firestore-backed store when enabled; otherwise a fresh in-memory demo (local dev, tests). */
@@ -29,10 +33,17 @@ async function createStore(): Promise<{ store: Store; persistence?: WriteThrough
 
 const { store, persistence } = await createStore();
 const here = path.dirname(fileURLToPath(import.meta.url));
-const app = createApp({ store, ai, sessionSecret: config.sessionSecret, staticDir: path.resolve(here, '../client') });
+const app = createApp({
+  store,
+  ai,
+  sessionSecret: config.sessionSecret,
+  staticDir: path.resolve(here, '../client'),
+});
 
 const server = app.listen(config.port, () => {
-  console.log(`LabLink listening on :${config.port} (AI: ${config.geminiApiKey ? config.geminiModel : 'rules fallback'}, storage: ${persistence ? 'firestore' : 'memory'})`);
+  console.log(
+    `LabLink listening on :${config.port} (AI: ${config.geminiApiKey ? config.geminiModel : 'rules fallback'}, storage: ${persistence ? 'firestore' : 'memory'})`,
+  );
 });
 
 // Cloud Run sends SIGTERM before stopping an instance: finish requests and pending writes.

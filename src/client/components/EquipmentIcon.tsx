@@ -145,7 +145,15 @@ const ICONS: Record<string, ReactElement> = {
   ),
 };
 
-export function EquipmentIcon({ category, size = 28, large = false }: { category: string; size?: number; large?: boolean }) {
+export function EquipmentIcon({
+  category,
+  size = 28,
+  large = false,
+}: {
+  category: string;
+  size?: number;
+  large?: boolean;
+}) {
   return (
     <span className={`equipment-icon${large ? ' large' : ''}`} aria-hidden="true">
       <svg

@@ -14,7 +14,10 @@ async function expectNoA11yViolations(container: HTMLElement) {
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 }
 
-const json = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }));
+const json = (body: unknown, status = 200) =>
+  Promise.resolve(
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }),
+  );
 
 const EQUIPMENT = {
   id: 'osc-1',
@@ -35,14 +38,35 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   sessionStorage.clear();
   fetchMock = vi.fn((url: string, init?: RequestInit) => {
-    if (url === '/api/auth/demo-users') return json([{ id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece' }, { id: 'fac-iyer', name: 'Dr. Iyer', role: 'faculty', departmentId: 'ece' }]);
-    if (url === '/api/auth/login') return json({ token: 'tok', profile: { user: { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece', trainings: [] }, projects: [], usage: { hours: 2, cap: 12 } } });
-    if (url === '/api/me') return json({ user: { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece', trainings: [] }, projects: [], usage: { hours: 2, cap: 12 } });
-    if (url === '/api/meta') return json({ departments: [{ id: 'ece', name: 'ECE' }], categories: ['oscilloscope'] });
+    if (url === '/api/auth/demo-users')
+      return json([
+        { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece' },
+        { id: 'fac-iyer', name: 'Dr. Iyer', role: 'faculty', departmentId: 'ece' },
+      ]);
+    if (url === '/api/auth/login')
+      return json({
+        token: 'tok',
+        profile: {
+          user: { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece', trainings: [] },
+          projects: [],
+          usage: { hours: 2, cap: 12 },
+        },
+      });
+    if (url === '/api/me')
+      return json({
+        user: { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece', trainings: [] },
+        projects: [],
+        usage: { hours: 2, cap: 12 },
+      });
+    if (url === '/api/meta')
+      return json({ departments: [{ id: 'ece', name: 'ECE' }], categories: ['oscilloscope'] });
     if (url.startsWith('/api/equipment')) return json([EQUIPMENT]);
     if (url === '/api/discover') {
       const { query } = JSON.parse(String(init?.body));
-      return json({ source: 'gemini', matches: [{ equipmentId: 'osc-1', reason: `Fits "${query}"`, equipment: EQUIPMENT }] });
+      return json({
+        source: 'gemini',
+        matches: [{ equipmentId: 'osc-1', reason: `Fits "${query}"`, equipment: EQUIPMENT }],
+      });
     }
     return json({ error: { code: 'NOT_FOUND', message: 'nope' } }, 404);
   });
@@ -71,7 +95,21 @@ describe('shared UI components', () => {
 
   it('lets users pick an alternative by keyboard', async () => {
     const onPick = vi.fn();
-    render(<Alternatives items={[{ equipmentId: 'osc-2', equipmentName: 'Scope B', start: '2026-11-24T04:30:00Z', end: '2026-11-24T05:30:00Z', kind: 'equivalent-equipment', label: 'Tue 10:00' }]} onPick={onPick} />);
+    render(
+      <Alternatives
+        items={[
+          {
+            equipmentId: 'osc-2',
+            equipmentName: 'Scope B',
+            start: '2026-11-24T04:30:00Z',
+            end: '2026-11-24T05:30:00Z',
+            kind: 'equivalent-equipment',
+            label: 'Tue 10:00',
+          },
+        ]}
+        onPick={onPick}
+      />,
+    );
     await userEvent.tab();
     await userEvent.keyboard('{Enter}');
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ equipmentId: 'osc-2' }));
@@ -131,7 +169,10 @@ describe('DiscoverPage', () => {
     expect(screen.getByText('High demand · fair queue')).toBeInTheDocument();
     await expectNoA11yViolations(container);
 
-    await userEvent.type(screen.getByLabelText('What are you trying to build or measure?'), 'debug I2C signals');
+    await userEvent.type(
+      screen.getByLabelText('What are you trying to build or measure?'),
+      'debug I2C signals',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Recommend equipment' }));
     expect(await screen.findByText(/Fits "debug I2C signals"/)).toBeInTheDocument();
     expect(screen.getByText('Gemini')).toBeInTheDocument();
@@ -152,7 +193,14 @@ describe('calendar export', () => {
   it('produces a valid iCalendar event with escaped text and a reminder', async () => {
     const { toIcs } = await import('../../src/client/lib/ics');
     const ics = toIcs(
-      { uid: 'b1', title: 'Lab: Scope, A; B', location: 'Lab 101', description: 'Line1\nLine2', start: '2026-11-24T04:30:00.000Z', end: '2026-11-24T06:30:00.000Z' },
+      {
+        uid: 'b1',
+        title: 'Lab: Scope, A; B',
+        location: 'Lab 101',
+        description: 'Line1\nLine2',
+        start: '2026-11-24T04:30:00.000Z',
+        end: '2026-11-24T06:30:00.000Z',
+      },
       new Date('2026-11-23T00:00:00Z'),
     );
     const lines = ics.split('\r\n');

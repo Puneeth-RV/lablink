@@ -32,7 +32,8 @@ export class TokenService {
     if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
     try {
       const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as SessionClaims;
-      if (typeof claims.sub !== 'string' || (claims.role !== 'student' && claims.role !== 'faculty')) return null;
+      if (typeof claims.sub !== 'string' || (claims.role !== 'student' && claims.role !== 'faculty'))
+        return null;
       return claims.exp * 1000 > this.clock() ? claims : null;
     } catch {
       return null;

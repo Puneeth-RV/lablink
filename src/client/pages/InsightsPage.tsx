@@ -45,7 +45,8 @@ export default function InsightsPage() {
                 <tr key={d.departmentId}>
                   <th scope="row">{d.name}</th>
                   <td>
-                    <meter min={0} max={1} value={d.rate} aria-label={`${d.name} utilisation`} /> {percent(d.rate)}
+                    <meter min={0} max={1} value={d.rate} aria-label={`${d.name} utilisation`} />{' '}
+                    {percent(d.rate)}
                   </td>
                 </tr>
               ))}
@@ -68,7 +69,8 @@ export default function InsightsPage() {
                 <tr key={p.hour}>
                   <th scope="row">{String(p.hour).padStart(2, '0')}:00</th>
                   <td>
-                    <meter min={0} max={maxPeak} value={p.bookedHours} aria-label={`${p.hour}:00 bookings`} /> {p.bookedHours}
+                    <meter min={0} max={maxPeak} value={p.bookedHours} aria-label={`${p.hour}:00 bookings`} />{' '}
+                    {p.bookedHours}
                   </td>
                 </tr>
               ))}
@@ -98,7 +100,16 @@ export default function InsightsPage() {
                   {e.bookedHours} / {e.capacityHours}
                 </td>
                 <td>
-                  <meter min={0} max={1} low={0.25} high={0.75} optimum={0.5} value={e.rate} aria-label={`${e.name} utilisation`} /> {percent(e.rate)}
+                  <meter
+                    min={0}
+                    max={1}
+                    low={0.25}
+                    high={0.75}
+                    optimum={0.5}
+                    value={e.rate}
+                    aria-label={`${e.name} utilisation`}
+                  />{' '}
+                  {percent(e.rate)}
                 </td>
               </tr>
             ))}

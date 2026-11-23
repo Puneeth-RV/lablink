@@ -7,7 +7,12 @@ export const NO_SHOW_GRACE_MS = 15 * 60 * 1000;
 
 export function canCheckIn(booking: Booking, now: number): boolean {
   const { start } = toInterval(booking);
-  return booking.status === 'confirmed' && !booking.checkedInAt && now >= start - CHECK_IN_OPENS_MS && now <= start + NO_SHOW_GRACE_MS;
+  return (
+    booking.status === 'confirmed' &&
+    !booking.checkedInAt &&
+    now >= start - CHECK_IN_OPENS_MS &&
+    now <= start + NO_SHOW_GRACE_MS
+  );
 }
 
 /**

@@ -13,7 +13,10 @@ export default function FaultsPage() {
       await api(`/faults/${f.id}`, { method: 'POST', body: { action } });
       setMessage({
         kind: 'success',
-        text: action === 'maintenance' ? `${f.equipmentName} is now offline for maintenance.` : `Fault resolved — ${f.equipmentName} is back online.`,
+        text:
+          action === 'maintenance'
+            ? `${f.equipmentName} is now offline for maintenance.`
+            : `Fault resolved — ${f.equipmentName} is back online.`,
       });
       faults.reload();
     } catch (err) {
@@ -34,7 +37,11 @@ export default function FaultsPage() {
           <li key={f.id} className="card">
             <h2 className="h3">
               {f.equipmentName}{' '}
-              {f.equipmentStatus === 'maintenance' ? <Badge tone="danger">Offline</Badge> : <Badge tone="ok">In service</Badge>}
+              {f.equipmentStatus === 'maintenance' ? (
+                <Badge tone="danger">Offline</Badge>
+              ) : (
+                <Badge tone="ok">In service</Badge>
+              )}
             </h2>
             <p className="muted small">
               Reported by {f.reporterName} · {formatDateTime(f.createdAt)}

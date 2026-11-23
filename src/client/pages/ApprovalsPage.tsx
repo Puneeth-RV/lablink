@@ -13,7 +13,10 @@ export default function ApprovalsPage() {
     try {
       const note = notes[a.id]?.trim();
       await api(`/approvals/${a.id}`, { method: 'POST', body: { decision, ...(note ? { note } : {}) } });
-      setMessage({ kind: 'success', text: `${decision === 'approved' ? 'Approved' : 'Rejected'} ${a.studentName}'s request for ${a.equipmentName}.` });
+      setMessage({
+        kind: 'success',
+        text: `${decision === 'approved' ? 'Approved' : 'Rejected'} ${a.studentName}'s request for ${a.equipmentName}.`,
+      });
       pending.reload();
     } catch (err) {
       setMessage({ kind: 'error', text: (err as Error).message });
@@ -23,7 +26,9 @@ export default function ApprovalsPage() {
   return (
     <>
       <h1 tabIndex={-1}>Access approvals</h1>
-      <p className="muted">Access requests for equipment in your department. Each request includes an automated pre-review.</p>
+      <p className="muted">
+        Access requests for equipment in your department. Each request includes an automated pre-review.
+      </p>
       <div aria-live="polite">{message && <Status kind={message.kind}>{message.text}</Status>}</div>
       {pending.loading && <Loading label="Loading requests and reviews…" />}
       {pending.error && <Status kind="error">{pending.error}</Status>}
@@ -53,7 +58,12 @@ export default function ApprovalsPage() {
               </div>
             )}
             <label htmlFor={`note-${a.id}`}>Note to student (optional)</label>
-            <input id={`note-${a.id}`} maxLength={500} value={notes[a.id] ?? ''} onChange={(e) => setNotes({ ...notes, [a.id]: e.target.value })} />
+            <input
+              id={`note-${a.id}`}
+              maxLength={500}
+              value={notes[a.id] ?? ''}
+              onChange={(e) => setNotes({ ...notes, [a.id]: e.target.value })}
+            />
             <div className="actions">
               <button type="button" className="btn btn-primary" onClick={() => decide(a, 'approved')}>
                 Approve

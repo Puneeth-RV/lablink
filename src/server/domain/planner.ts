@@ -1,7 +1,16 @@
 import { isSlotFree } from './allocation.js';
 import { checkFeasibility, describeViolations, recentUsageHours, WEEKLY_HOUR_CAP } from './policy.js';
 import { candidateSlots, overlaps, toInterval, toIso } from './time.js';
-import type { AccessRequest, Booking, Equipment, Interval, PlanItem, PlanNeed, Project, User } from './types.js';
+import type {
+  AccessRequest,
+  Booking,
+  Equipment,
+  Interval,
+  PlanItem,
+  PlanNeed,
+  Project,
+  User,
+} from './types.js';
 
 export interface PlanContext {
   now: number;
@@ -30,7 +39,11 @@ export function planSchedule(needs: PlanNeed[], ctx: PlanContext): PlanItem[] {
 
     const hours = Math.min(need.hours, Math.max(...candidates.map((e) => e.maxSlotHours)));
     if (plannedHours + hours > WEEKLY_HOUR_CAP) {
-      return { ...need, hours, issues: [`Would exceed the fair-use cap of ${WEEKLY_HOUR_CAP} hours per week.`] };
+      return {
+        ...need,
+        hours,
+        issues: [`Would exceed the fair-use cap of ${WEEKLY_HOUR_CAP} hours per week.`],
+      };
     }
 
     const blockers = new Set<string>();
@@ -40,7 +53,14 @@ export function planSchedule(needs: PlanNeed[], ctx: PlanContext): PlanItem[] {
       for (const slot of candidateSlots(now, deadline, h)) {
         if (best && slot.start >= best.slot.start) break;
         if (busy.some((b) => overlaps(b, slot)) || !isSlotFree(e.id, slot, bookings)) continue;
-        const violations = checkFeasibility(slot, { now, user, project, equipment: e, userBookings, accessRequests }).filter((v) => v !== 'WEEKLY_CAP');
+        const violations = checkFeasibility(slot, {
+          now,
+          user,
+          project,
+          equipment: e,
+          userBookings,
+          accessRequests,
+        }).filter((v) => v !== 'WEEKLY_CAP');
         if (violations.length) {
           describeViolations(violations).forEach((v) => blockers.add(`${e.name}: ${v}`));
           break; // rule violations are not time-dependent for this item
@@ -51,10 +71,21 @@ export function planSchedule(needs: PlanNeed[], ctx: PlanContext): PlanItem[] {
     }
 
     if (!best) {
-      return { ...need, hours, issues: blockers.size ? [...blockers] : ['No free slot before the project deadline.'] };
+      return {
+        ...need,
+        hours,
+        issues: blockers.size ? [...blockers] : ['No free slot before the project deadline.'],
+      };
     }
     busy.push(best.slot);
     plannedHours += (best.slot.end - best.slot.start) / 3_600_000;
-    return { ...need, hours, equipmentId: best.equipment.id, start: toIso(best.slot.start), end: toIso(best.slot.end), issues: [] };
+    return {
+      ...need,
+      hours,
+      equipmentId: best.equipment.id,
+      start: toIso(best.slot.start),
+      end: toIso(best.slot.end),
+      issues: [],
+    };
   });
 }

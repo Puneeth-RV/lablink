@@ -37,7 +37,13 @@ export interface ScoreInput {
 }
 
 /** Explainable priority score in [0, 1] with per-factor breakdown. */
-export function scoreRequest({ now, deadline, usageHours, essential, createdAt }: ScoreInput): ScoreBreakdown {
+export function scoreRequest({
+  now,
+  deadline,
+  usageHours,
+  essential,
+  createdAt,
+}: ScoreInput): ScoreBreakdown {
   const daysLeft = (deadline - now) / DAY_MS;
   const urgency = clamp01(1 - daysLeft / URGENCY_HORIZON_DAYS);
   const fairness = clamp01(1 - usageHours / WEEKLY_HOUR_CAP);
@@ -45,10 +51,21 @@ export function scoreRequest({ now, deadline, usageHours, essential, createdAt }
   const waiting = clamp01((now - createdAt) / HOUR_MS / WAITING_SATURATION_HOURS);
   const total =
     WEIGHTS.urgency * urgency + WEIGHTS.fairness * fairness + WEIGHTS.fit * fit + WEIGHTS.waiting * waiting;
-  return { urgency: round(urgency), fairness: round(fairness), fit: round(fit), waiting: round(waiting), total: round(total) };
+  return {
+    urgency: round(urgency),
+    fairness: round(fairness),
+    fit: round(fit),
+    waiting: round(waiting),
+    total: round(total),
+  };
 }
 
-export function isSlotFree(equipmentId: string, slot: Interval, bookings: Booking[], reserved: Interval[] = []): boolean {
+export function isSlotFree(
+  equipmentId: string,
+  slot: Interval,
+  bookings: Booking[],
+  reserved: Interval[] = [],
+): boolean {
   const clash = bookings.some(
     (b) => b.status === 'confirmed' && b.equipmentId === equipmentId && overlaps(toInterval(b), slot),
   );
@@ -89,16 +106,27 @@ export function findAlternatives(q: AlternativeQuery): Alternative[] {
       .sort((a, b) => Math.abs(a.start - slot.start) - Math.abs(b.start - slot.start) || a.start - b.start)
       .slice(0, Math.ceil(limit / 2))
       .forEach((c) =>
-        results.push({ equipmentId: equipment.id, start: toIso(c.start), end: toIso(c.end), kind: 'same-equipment-later' }),
+        results.push({
+          equipmentId: equipment.id,
+          start: toIso(c.start),
+          end: toIso(c.end),
+          kind: 'same-equipment-later',
+        }),
       );
   }
 
   for (const other of allEquipment) {
     if (results.length >= limit) break;
-    if (other.id === equipment.id || other.category !== equipment.category || other.status !== 'available') continue;
+    if (other.id === equipment.id || other.category !== equipment.category || other.status !== 'available')
+      continue;
     if (other.requiredTraining && !user.trainings.includes(other.requiredTraining)) continue;
     if (isSlotFree(other.id, slot, bookings)) {
-      results.push({ equipmentId: other.id, start: toIso(slot.start), end: toIso(slot.end), kind: 'equivalent-equipment' });
+      results.push({
+        equipmentId: other.id,
+        start: toIso(slot.start),
+        end: toIso(slot.end),
+        kind: 'equivalent-equipment',
+      });
     }
   }
   return results.slice(0, limit);
@@ -157,7 +185,11 @@ export function allocate(requests: SlotRequest[], ctx: AllocationContext): Ranke
 
   const ordered = [...evaluated].sort((a, b) => {
     if (a.score && b.score) {
-      return b.score.total - a.score.total || a.req.createdAt.localeCompare(b.req.createdAt) || a.req.id.localeCompare(b.req.id);
+      return (
+        b.score.total - a.score.total ||
+        a.req.createdAt.localeCompare(b.req.createdAt) ||
+        a.req.id.localeCompare(b.req.id)
+      );
     }
     return a.score ? -1 : b.score ? 1 : a.req.id.localeCompare(b.req.id);
   });
@@ -167,7 +199,12 @@ export function allocate(requests: SlotRequest[], ctx: AllocationContext): Ranke
     const granted = !!score && isSlotFree(equipment.id, slot, ctx.bookings, taken);
     if (granted) {
       reserved.set(equipment.id, [...taken, slot]);
-      return { requestId: req.id, score, violations, outcome: { decision: 'allocated', score, violations: [], alternatives: [] } };
+      return {
+        requestId: req.id,
+        score,
+        violations,
+        outcome: { decision: 'allocated', score, violations: [], alternatives: [] },
+      };
     }
     const alternatives = findAlternatives({
       now: ctx.now,
@@ -179,7 +216,12 @@ export function allocate(requests: SlotRequest[], ctx: AllocationContext): Ranke
       deadline: Date.parse(project.deadline),
       reserved: taken,
     });
-    return { requestId: req.id, score, violations, outcome: { decision: 'declined', score, violations, alternatives } };
+    return {
+      requestId: req.id,
+      score,
+      violations,
+      outcome: { decision: 'declined', score, violations, alternatives },
+    };
   });
 }
 
@@ -203,7 +245,11 @@ export function conflictGroups(requests: SlotRequest[]): ConflictGroup[] {
     let currentEnd = -Infinity;
     const flush = () => {
       if (current.length) {
-        groups.push({ id: `${equipmentId}@${current[0]!.start}`, equipmentId, requestIds: current.map((r) => r.id) });
+        groups.push({
+          id: `${equipmentId}@${current[0]!.start}`,
+          equipmentId,
+          requestIds: current.map((r) => r.id),
+        });
       }
     };
     for (const r of sorted) {

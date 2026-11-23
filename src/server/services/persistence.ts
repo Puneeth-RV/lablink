@@ -2,7 +2,16 @@ import type { ChangeListener, CollectionName, SeedData } from './store.js';
 
 type Entity = { id: string };
 
-export const COLLECTIONS: CollectionName[] = ['departments', 'users', 'equipment', 'projects', 'bookings', 'slotRequests', 'accessRequests', 'faultReports'];
+export const COLLECTIONS: CollectionName[] = [
+  'departments',
+  'users',
+  'equipment',
+  'projects',
+  'bookings',
+  'slotRequests',
+  'accessRequests',
+  'faultReports',
+];
 
 /** Minimal document-database port; Firestore in production, an in-memory fake in tests. */
 export interface DocumentDb {
@@ -50,11 +59,17 @@ export class WriteThroughPersistence {
   ) {}
 
   /** Loads persisted data, or seeds fresh demo data when none exists or it is stale. */
-  async loadOrSeed(createSeed: (now: number) => SeedData, now: number = Date.now()): Promise<{ data: SeedData; seeded: boolean }> {
+  async loadOrSeed(
+    createSeed: (now: number) => SeedData,
+    now: number = Date.now(),
+  ): Promise<{ data: SeedData; seeded: boolean }> {
     const meta = await this.db.getMeta();
     if (meta && now - Date.parse(meta.seededAt) < SEED_MAX_AGE_MS) {
       const entries = await Promise.all(COLLECTIONS.map(async (c) => [c, await this.db.readAll(c)] as const));
-      return { data: pruneWorkingSet(Object.fromEntries(entries) as unknown as SeedData, now), seeded: false };
+      return {
+        data: pruneWorkingSet(Object.fromEntries(entries) as unknown as SeedData, now),
+        seeded: false,
+      };
     }
     const data = createSeed(now);
     await this.db.replaceAll(data);
@@ -113,7 +128,9 @@ export async function createFirestoreDb(projectId?: string): Promise<DocumentDb>
       }
       await commitInChunks(deletes);
       const writes = COLLECTIONS.flatMap((c) =>
-        (data[c] as Entity[]).map((e) => (b: FirebaseFirestore.WriteBatch) => b.set(fs.collection(c).doc(e.id), e)),
+        (data[c] as Entity[]).map(
+          (e) => (b: FirebaseFirestore.WriteBatch) => b.set(fs.collection(c).doc(e.id), e),
+        ),
       );
       await commitInChunks(writes);
     },

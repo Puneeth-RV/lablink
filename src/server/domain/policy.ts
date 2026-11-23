@@ -36,7 +36,11 @@ export function recentUsageHours(userBookings: Booking[], now: number): number {
   return hoursWithin(confirmed, window);
 }
 
-export function hasApprovedAccess(requests: AccessRequest[], equipmentId: string, projectId: string): boolean {
+export function hasApprovedAccess(
+  requests: AccessRequest[],
+  equipmentId: string,
+  projectId: string,
+): boolean {
   return requests.some(
     (r) => r.equipmentId === equipmentId && r.projectId === projectId && r.status === 'approved',
   );

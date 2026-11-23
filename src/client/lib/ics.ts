@@ -8,9 +8,14 @@ export interface CalendarEvent {
   end: string;
 }
 
-const stamp = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+const stamp = (iso: string) =>
+  new Date(iso)
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '');
 /** Escape characters with special meaning in iCalendar text values. */
-const text = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const text = (s: string) =>
+  s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 
 export function toIcs(e: CalendarEvent, now: Date = new Date()): string {
   return [

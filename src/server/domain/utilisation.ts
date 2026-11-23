@@ -76,7 +76,11 @@ export function utilisationReport(
   const suggestions: string[] = [];
   for (const busy of items.filter((i) => i.rate >= OVERUSED_THRESHOLD)) {
     const spare = items.find(
-      (i) => i.category === busy.category && i.equipmentId !== busy.equipmentId && i.capacityHours > 0 && i.rate <= UNDERUSED_THRESHOLD,
+      (i) =>
+        i.category === busy.category &&
+        i.equipmentId !== busy.equipmentId &&
+        i.capacityHours > 0 &&
+        i.rate <= UNDERUSED_THRESHOLD,
     );
     suggestions.push(
       spare
@@ -87,9 +91,14 @@ export function utilisationReport(
   const idle = items.filter((i) => i.capacityHours > 0 && i.bookedHours === 0);
   if (idle.length) {
     // One grouped line keeps the list actionable instead of one line per idle item.
-    const named = idle.slice(0, 3).map((i) => i.name).join(', ');
+    const named = idle
+      .slice(0, 3)
+      .map((i) => i.name)
+      .join(', ');
     const more = idle.length > 3 ? ` and ${idle.length - 3} more` : '';
-    suggestions.push(`${idle.length} item${idle.length > 1 ? 's were' : ' was'} not booked at all (${named}${more}) — promote them to projects that need them.`);
+    suggestions.push(
+      `${idle.length} item${idle.length > 1 ? 's were' : ' was'} not booked at all (${named}${more}) — promote them to projects that need them.`,
+    );
   }
 
   return {

@@ -49,7 +49,9 @@ export function authenticate(tokens: TokenService): RequestHandler {
 
 export function requireRole(role: Role): RequestHandler {
   return (_req, res, next) =>
-    session(res).role === role ? next() : next(new HttpError(403, 'FORBIDDEN', `Only ${role} accounts can do this`));
+    session(res).role === role
+      ? next()
+      : next(new HttpError(403, 'FORBIDDEN', `Only ${role} accounts can do this`));
 }
 
 /** Uniform JSON errors; internals are logged, never leaked to clients. */

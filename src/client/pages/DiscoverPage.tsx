@@ -8,7 +8,11 @@ import { useDebounced, useResource } from '../lib/hooks';
 function EquipmentBadges({ e }: { e: Equipment }) {
   return (
     <span className="badges">
-      {e.status === 'maintenance' ? <Badge tone="danger">Under maintenance</Badge> : !e.highDemand && !e.requiresApproval && <Badge tone="ok">Instant booking</Badge>}
+      {e.status === 'maintenance' ? (
+        <Badge tone="danger">Under maintenance</Badge>
+      ) : (
+        !e.highDemand && !e.requiresApproval && <Badge tone="ok">Instant booking</Badge>
+      )}
       {e.highDemand && <Badge tone="warn">High demand · fair queue</Badge>}
       {e.requiresApproval && <Badge tone="info">Faculty approval</Badge>}
       {e.requiredTraining && <Badge>Training: {titleCase(e.requiredTraining)}</Badge>}
@@ -54,7 +58,9 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <>
       <h1 tabIndex={-1}>Find lab equipment</h1>
-      <p className="muted">Equipment from all departments. Describe what you need, or browse the full list below.</p>
+      <p className="muted">
+        Equipment from all departments. Describe what you need, or browse the full list below.
+      </p>
 
       <section aria-labelledby="ai-heading" className="card">
         <h2 id="ai-heading">Find by project need</h2>
@@ -86,7 +92,8 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
           {ai && (
             <div className="ai-results">
               <p>
-                {ai.matches.length} recommendation{ai.matches.length === 1 ? '' : 's'} <SourceBadge source={ai.source} />
+                {ai.matches.length} recommendation{ai.matches.length === 1 ? '' : 's'}{' '}
+                <SourceBadge source={ai.source} />
               </p>
               <ol>
                 {ai.matches.map((m) => (
@@ -94,7 +101,8 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
                     <button type="button" className="link" onClick={() => onOpen(m.equipmentId)}>
                       {m.equipment.name}
                     </button>{' '}
-                    <span className="muted">({deptName(m.equipment.departmentId)})</span> — {m.reason} <EquipmentBadges e={m.equipment} />
+                    <span className="muted">({deptName(m.equipment.departmentId)})</span> — {m.reason}{' '}
+                    <EquipmentBadges e={m.equipment} />
                   </li>
                 ))}
               </ol>
@@ -108,7 +116,14 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
         <div className="filters">
           <div>
             <label htmlFor="q">Search</label>
-            <input id="q" type="search" value={q} maxLength={100} onChange={(e) => setQ(e.target.value)} placeholder="Name or capability" />
+            <input
+              id="q"
+              type="search"
+              value={q}
+              maxLength={100}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Name or capability"
+            />
           </div>
           <div>
             <label htmlFor="dept">Department</label>
@@ -150,7 +165,12 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
                   </p>
                   <p>{e.description}</p>
                   <EquipmentBadges e={e} />
-                  <button type="button" className="btn" onClick={() => onOpen(e.id)} aria-label={`View & book ${e.name}`}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => onOpen(e.id)}
+                    aria-label={`View & book ${e.name}`}
+                  >
                     View &amp; book
                   </button>
                 </li>

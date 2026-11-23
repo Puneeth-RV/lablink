@@ -11,14 +11,26 @@ import type {
   User,
 } from '../../server/domain/types';
 
-export type { AccessRequest, AiReview, Alternative, Booking, Department, Equipment, Project, ScoreBreakdown, SlotRequest, User };
+export type {
+  AccessRequest,
+  AiReview,
+  Alternative,
+  Booking,
+  Department,
+  Equipment,
+  Project,
+  ScoreBreakdown,
+  SlotRequest,
+  User,
+};
 
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
-    readonly details?: { violations?: string[]; alternatives?: NamedAlternative[] } | { field: string; message: string }[],
+    readonly details?:
+      { violations?: string[]; alternatives?: NamedAlternative[] } | { field: string; message: string }[],
   ) {
     super(message);
   }
@@ -88,12 +100,28 @@ export type NamedAlternative = Alternative & { equipmentName?: string; label?: s
 export type BookingResult = { kind: 'booked'; booking: Booking } | { kind: 'queued'; request: SlotRequest };
 
 export interface Activity {
-  bookings: (Booking & { equipmentName: string; projectTitle: string; label: string; upcoming: boolean; canCheckIn: boolean })[];
-  slotRequests: (SlotRequest & { equipmentName: string; projectTitle: string; label: string; alternatives: NamedAlternative[] })[];
+  bookings: (Booking & {
+    equipmentName: string;
+    projectTitle: string;
+    label: string;
+    upcoming: boolean;
+    canCheckIn: boolean;
+  })[];
+  slotRequests: (SlotRequest & {
+    equipmentName: string;
+    projectTitle: string;
+    label: string;
+    alternatives: NamedAlternative[];
+  })[];
   accessRequests: (AccessRequest & { equipmentName: string; projectTitle: string })[];
 }
 
-export type PendingApproval = AccessRequest & { studentName: string; equipmentName: string; projectTitle: string; deadline: string };
+export type PendingApproval = AccessRequest & {
+  studentName: string;
+  equipmentName: string;
+  projectTitle: string;
+  deadline: string;
+};
 
 export interface ConflictEntry {
   requestId: string;
@@ -118,7 +146,15 @@ export interface ConflictGroup {
 }
 
 export interface UtilisationReport {
-  equipment: { equipmentId: string; name: string; category: string; departmentId: string; bookedHours: number; capacityHours: number; rate: number }[];
+  equipment: {
+    equipmentId: string;
+    name: string;
+    category: string;
+    departmentId: string;
+    bookedHours: number;
+    capacityHours: number;
+    rate: number;
+  }[];
   departments: { departmentId: string; name: string; rate: number }[];
   peakHours: { hour: number; bookedHours: number }[];
   suggestions: string[];

@@ -51,7 +51,10 @@ export function createApp({ store, ai, sessionSecret, clock = Date.now, staticDi
     res.json({ status: 'ok' });
   });
 
-  app.use('/api', rateLimit({ windowMs: 15 * 60_000, limit: 600, standardHeaders: 'draft-8', legacyHeaders: false }));
+  app.use(
+    '/api',
+    rateLimit({ windowMs: 15 * 60_000, limit: 600, standardHeaders: 'draft-8', legacyHeaders: false }),
+  );
   app.use('/api', (_req, res, next) => {
     res.set('Cache-Control', 'no-store');
     next();
@@ -60,7 +63,10 @@ export function createApp({ store, ai, sessionSecret, clock = Date.now, staticDi
 
   if (staticDir && existsSync(staticDir)) {
     // Hashed assets are immutable; index.html must always revalidate.
-    app.use('/assets', express.static(path.join(staticDir, 'assets'), { immutable: true, maxAge: '1y', index: false }));
+    app.use(
+      '/assets',
+      express.static(path.join(staticDir, 'assets'), { immutable: true, maxAge: '1y', index: false }),
+    );
     app.use(express.static(staticDir, { index: false, maxAge: '7d' }));
     app.get(/^\/(?!api\/).*/, (_req, res) => {
       res.set('Cache-Control', 'no-cache');

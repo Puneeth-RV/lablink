@@ -30,7 +30,12 @@ export function useResource<T>(path: string | null): Resource<T> {
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
   const loading = key !== null && state.key !== key;
-  return { data: state.data, error: loading ? undefined : state.error, loading: loading && state.data === undefined, reload };
+  return {
+    data: state.data,
+    error: loading ? undefined : state.error,
+    loading: loading && state.data === undefined,
+    reload,
+  };
 }
 
 /** Value that only updates after `ms` without changes — avoids a request per keystroke. */

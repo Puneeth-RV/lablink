@@ -1,9 +1,31 @@
-import { allocate, conflictGroups, findAlternatives, isSlotFree, type AllocationContext } from '../domain/allocation.js';
+import {
+  allocate,
+  conflictGroups,
+  findAlternatives,
+  isSlotFree,
+  type AllocationContext,
+} from '../domain/allocation.js';
 import { canCheckIn, findNoShows } from '../domain/checkin.js';
 import { planSchedule } from '../domain/planner.js';
 import { checkFeasibility, describeViolations, recentUsageHours, WEEKLY_HOUR_CAP } from '../domain/policy.js';
-import { DAY_MS, HOUR_MS, LAB_CLOSE_HOUR, LAB_OPEN_HOUR, overlaps, toInterval, toIso } from '../domain/time.js';
-import type { AccessRequest, Booking, Equipment, FaultReport, Project, SlotRequest, User } from '../domain/types.js';
+import {
+  DAY_MS,
+  HOUR_MS,
+  LAB_CLOSE_HOUR,
+  LAB_OPEN_HOUR,
+  overlaps,
+  toInterval,
+  toIso,
+} from '../domain/time.js';
+import type {
+  AccessRequest,
+  Booking,
+  Equipment,
+  FaultReport,
+  Project,
+  SlotRequest,
+  User,
+} from '../domain/types.js';
 import { utilisationReport } from '../domain/utilisation.js';
 import { HttpError, notFound } from '../middleware/http.js';
 import type { AiAssistant } from './ai.js';
@@ -44,20 +66,48 @@ export class LabService {
   // ---- lookups -----------------------------------------------------------
 
   user(id: string): User {
-    return this.store.users.get(id) ?? (() => { throw notFound('User'); })();
+    return (
+      this.store.users.get(id) ??
+      (() => {
+        throw notFound('User');
+      })()
+    );
   }
 
   private equipment(id: string): Equipment {
-    return this.store.equipment.get(id) ?? (() => { throw notFound('Equipment'); })();
+    return (
+      this.store.equipment.get(id) ??
+      (() => {
+        throw notFound('Equipment');
+      })()
+    );
   }
 
   private project(id: string): Project {
-    return this.store.projects.get(id) ?? (() => { throw notFound('Project'); })();
+    return (
+      this.store.projects.get(id) ??
+      (() => {
+        throw notFound('Project');
+      })()
+    );
   }
 
   private label(slot: { start: string; end: string }): string {
-    const fmt = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
-    const end = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+    const fmt = new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const end = new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
     return `${fmt.format(new Date(slot.start))}–${end.format(new Date(slot.end))}`;
   }
 
@@ -77,7 +127,10 @@ export class LabService {
   profile(userId: string) {
     const user = this.user(userId);
     const projects = this.store.projects.list((p) => p.ownerId === userId);
-    const usage = recentUsageHours(this.store.bookings.list((b) => b.userId === userId), this.clock());
+    const usage = recentUsageHours(
+      this.store.bookings.list((b) => b.userId === userId),
+      this.clock(),
+    );
     return { user, projects, usage: { hours: usage, cap: WEEKLY_HOUR_CAP } };
   }
 
@@ -94,7 +147,10 @@ export class LabService {
       (e) =>
         (!departmentId || e.departmentId === departmentId) &&
         (!category || e.category === category) &&
-        (!needle || [e.name, e.category, e.description, ...e.capabilities].some((t) => t.toLowerCase().includes(needle))),
+        (!needle ||
+          [e.name, e.category, e.description, ...e.capabilities].some((t) =>
+            t.toLowerCase().includes(needle),
+          )),
     );
   }
 
@@ -115,8 +171,12 @@ export class LabService {
     const equipment = this.equipment(equipmentId);
     const dayStart = Date.parse(`${date}${IST_SUFFIX}`);
     if (Number.isNaN(dayStart)) throw new HttpError(400, 'VALIDATION_ERROR', 'Invalid date');
-    const bookings = this.store.bookings.list((b) => b.equipmentId === equipmentId && b.status === 'confirmed');
-    const pending = this.store.slotRequests.list((r) => r.equipmentId === equipmentId && r.status === 'pending');
+    const bookings = this.store.bookings.list(
+      (b) => b.equipmentId === equipmentId && b.status === 'confirmed',
+    );
+    const pending = this.store.slotRequests.list(
+      (r) => r.equipmentId === equipmentId && r.status === 'pending',
+    );
     const slots = [];
     for (let hour = LAB_OPEN_HOUR; hour < LAB_CLOSE_HOUR; hour++) {
       const slot = { start: dayStart + hour * HOUR_MS, end: dayStart + (hour + 1) * HOUR_MS };
@@ -149,7 +209,10 @@ export class LabService {
    * Instant booking for normal equipment; fair-queue request for high-demand equipment.
    * Infeasible or clashing requests are rejected with actionable alternatives.
    */
-  createBooking(userId: string, input: BookingInput): { kind: 'booked'; booking: Booking } | { kind: 'queued'; request: SlotRequest } {
+  createBooking(
+    userId: string,
+    input: BookingInput,
+  ): { kind: 'booked'; booking: Booking } | { kind: 'queued'; request: SlotRequest } {
     this.releaseNoShows();
     const now = this.clock();
     const user = this.user(userId);
@@ -158,7 +221,15 @@ export class LabService {
     const slot = toInterval(input);
     const bookings = this.store.bookings.list();
     const alternatives = () =>
-      findAlternatives({ now, slot, equipment, allEquipment: this.store.equipment.list(), bookings, user, deadline: Date.parse(project.deadline) });
+      findAlternatives({
+        now,
+        slot,
+        equipment,
+        allEquipment: this.store.equipment.list(),
+        bookings,
+        user,
+        deadline: Date.parse(project.deadline),
+      });
 
     const violations = checkFeasibility(slot, {
       now,
@@ -175,13 +246,27 @@ export class LabService {
       });
     }
     if (!isSlotFree(equipment.id, slot, bookings)) {
-      throw new HttpError(409, 'SLOT_TAKEN', 'That slot is already booked', { violations: [], alternatives: alternatives() });
+      throw new HttpError(409, 'SLOT_TAKEN', 'That slot is already booked', {
+        violations: [],
+        alternatives: alternatives(),
+      });
     }
 
-    const base = { equipmentId: equipment.id, userId, projectId: project.id, start: toIso(slot.start), end: toIso(slot.end), createdAt: toIso(now) };
+    const base = {
+      equipmentId: equipment.id,
+      userId,
+      projectId: project.id,
+      start: toIso(slot.start),
+      end: toIso(slot.end),
+      createdAt: toIso(now),
+    };
     if (equipment.highDemand) {
       const duplicate = this.store.slotRequests.list(
-        (r) => r.userId === userId && r.equipmentId === equipment.id && r.status === 'pending' && overlaps(toInterval(r), slot),
+        (r) =>
+          r.userId === userId &&
+          r.equipmentId === equipment.id &&
+          r.status === 'pending' &&
+          overlaps(toInterval(r), slot),
       );
       if (duplicate.length) throw new HttpError(409, 'DUPLICATE_REQUEST', 'You already requested this slot');
       return { kind: 'queued', request: this.store.slotRequests.insert({ ...base, status: 'pending' }) };
@@ -200,7 +285,11 @@ export class LabService {
     const booking = this.store.bookings.get(bookingId);
     if (!booking || booking.userId !== userId) throw notFound('Booking');
     if (!canCheckIn(booking, this.clock())) {
-      throw new HttpError(409, 'CHECK_IN_CLOSED', 'Check-in opens 10 minutes before the slot and closes 15 minutes after it starts');
+      throw new HttpError(
+        409,
+        'CHECK_IN_CLOSED',
+        'Check-in opens 10 minutes before the slot and closes 15 minutes after it starts',
+      );
     }
     return this.store.bookings.update(bookingId, { checkedInAt: toIso(this.clock()) });
   }
@@ -212,7 +301,9 @@ export class LabService {
     const byStart = <T extends { start: string }>(a: T, b: T) => a.start.localeCompare(b.start);
     return {
       bookings: this.store.bookings
-        .list((b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > this.clock() - DAY_MS)
+        .list(
+          (b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > this.clock() - DAY_MS,
+        )
         .sort(byStart)
         .map((b) => ({
           ...b,
@@ -230,7 +321,11 @@ export class LabService {
           equipmentName: name(r.equipmentId),
           projectTitle: title(r.projectId),
           label: this.label(r),
-          alternatives: (r.outcome?.alternatives ?? []).map((a) => ({ ...a, equipmentName: name(a.equipmentId), label: this.label(a) })),
+          alternatives: (r.outcome?.alternatives ?? []).map((a) => ({
+            ...a,
+            equipmentName: name(a.equipmentId),
+            label: this.label(a),
+          })),
         })),
       accessRequests: this.store.accessRequests
         .list((a) => a.userId === userId)
@@ -244,12 +339,19 @@ export class LabService {
     const user = this.user(userId);
     const equipment = this.equipment(input.equipmentId);
     const project = this.project(input.projectId);
-    if (project.ownerId !== userId) throw new HttpError(403, 'FORBIDDEN', 'You can only request access for your own project');
-    if (!equipment.requiresApproval) throw new HttpError(422, 'NOT_REQUIRED', 'This equipment can be booked without approval');
+    if (project.ownerId !== userId)
+      throw new HttpError(403, 'FORBIDDEN', 'You can only request access for your own project');
+    if (!equipment.requiresApproval)
+      throw new HttpError(422, 'NOT_REQUIRED', 'This equipment can be booked without approval');
     const existing = this.store.accessRequests.list(
-      (a) => a.userId === userId && a.equipmentId === equipment.id && a.projectId === project.id && a.status !== 'rejected',
+      (a) =>
+        a.userId === userId &&
+        a.equipmentId === equipment.id &&
+        a.projectId === project.id &&
+        a.status !== 'rejected',
     );
-    if (existing.length) throw new HttpError(409, 'DUPLICATE_REQUEST', `An access request is already ${existing[0]!.status}`);
+    if (existing.length)
+      throw new HttpError(409, 'DUPLICATE_REQUEST', `An access request is already ${existing[0]!.status}`);
 
     const aiReview = await this.ai.reviewAccessRequest({
       equipment,
@@ -259,7 +361,13 @@ export class LabService {
       justification: input.justification,
       hasTraining: !equipment.requiredTraining || user.trainings.includes(equipment.requiredTraining),
     });
-    return this.store.accessRequests.insert({ ...input, userId, status: 'pending', createdAt: toIso(this.clock()), aiReview });
+    return this.store.accessRequests.insert({
+      ...input,
+      userId,
+      status: 'pending',
+      createdAt: toIso(this.clock()),
+      aiReview,
+    });
   }
 
   /** Faculty only see requests for equipment owned by their department. */
@@ -268,7 +376,9 @@ export class LabService {
   }
 
   async pendingApprovals(facultyId: string) {
-    const pending = this.store.accessRequests.list((a) => a.status === 'pending' && this.inScope(facultyId, a.equipmentId));
+    const pending = this.store.accessRequests.list(
+      (a) => a.status === 'pending' && this.inScope(facultyId, a.equipmentId),
+    );
     // Older seeded requests may lack a review: generate them in parallel, then persist.
     await Promise.all(
       pending
@@ -299,18 +409,30 @@ export class LabService {
       }));
   }
 
-  decideAccess(facultyId: string, requestId: string, decision: 'approved' | 'rejected', note?: string): AccessRequest {
+  decideAccess(
+    facultyId: string,
+    requestId: string,
+    decision: 'approved' | 'rejected',
+    note?: string,
+  ): AccessRequest {
     const request = this.store.accessRequests.get(requestId);
     if (!request || !this.inScope(facultyId, request.equipmentId)) throw notFound('Access request');
-    if (request.status !== 'pending') throw new HttpError(409, 'ALREADY_DECIDED', `Request was already ${request.status}`);
-    return this.store.accessRequests.update(requestId, { status: decision, decidedBy: facultyId, decisionNote: note });
+    if (request.status !== 'pending')
+      throw new HttpError(409, 'ALREADY_DECIDED', `Request was already ${request.status}`);
+    return this.store.accessRequests.update(requestId, {
+      status: decision,
+      decidedBy: facultyId,
+      decisionNote: note,
+    });
   }
 
   // ---- conflicts ---------------------------------------------------------------
 
   /** Pending contested requests in the faculty member's department, with a dry-run of the fair allocation. */
   conflicts(facultyId: string) {
-    const pending = this.store.slotRequests.list((r) => r.status === 'pending' && this.inScope(facultyId, r.equipmentId));
+    const pending = this.store.slotRequests.list(
+      (r) => r.status === 'pending' && this.inScope(facultyId, r.equipmentId),
+    );
     const ctx = this.allocationContext();
     return conflictGroups(pending).map((group) => {
       const requests = group.requestIds.map((id) => this.store.slotRequests.get(id)!);
@@ -322,7 +444,10 @@ export class LabService {
     const equipment = this.equipment(requests[0]!.equipmentId);
     const span = {
       start: requests.map((r) => r.start).sort()[0]!,
-      end: requests.map((r) => r.end).sort().at(-1)!,
+      end: requests
+        .map((r) => r.end)
+        .sort()
+        .at(-1)!,
     };
     return {
       equipmentName: equipment.name,
@@ -339,7 +464,11 @@ export class LabService {
           score: r.score,
           decision: r.outcome.decision,
           violations: describeViolations(r.violations),
-          alternatives: r.outcome.alternatives.map((a) => ({ ...a, equipmentName: this.equipment(a.equipmentId).name, label: this.label(a) })),
+          alternatives: r.outcome.alternatives.map((a) => ({
+            ...a,
+            equipmentName: this.equipment(a.equipmentId).name,
+            label: this.label(a),
+          })),
         };
       }),
     };
@@ -369,11 +498,23 @@ export class LabService {
     for (const r of ranked) {
       const req = this.store.slotRequests.get(r.requestId)!;
       if (r.outcome.decision === 'allocated') {
-        this.store.bookings.insert({ equipmentId: req.equipmentId, userId: req.userId, projectId: req.projectId, start: req.start, end: req.end, status: 'confirmed', createdAt: toIso(this.clock()) });
+        this.store.bookings.insert({
+          equipmentId: req.equipmentId,
+          userId: req.userId,
+          projectId: req.projectId,
+          start: req.start,
+          end: req.end,
+          status: 'confirmed',
+          createdAt: toIso(this.clock()),
+        });
       }
       this.store.slotRequests.update(req.id, {
         status: r.outcome.decision,
-        outcome: { ...r.outcome, violations: describeViolations(r.violations), explanation: explanation.text },
+        outcome: {
+          ...r.outcome,
+          violations: describeViolations(r.violations),
+          explanation: explanation.text,
+        },
       });
     }
     return { ...group, ...described, explanation: explanation.text, explanationSource: explanation.source };
@@ -385,24 +526,38 @@ export class LabService {
    * Creates a project from a free-form description. Gemini extracts title, deadline and the
    * equipment categories needed; the server validates every field before saving.
    */
-  async createProject(userId: string, description: string): Promise<Project & { source: 'gemini' | 'rules' }> {
+  async createProject(
+    userId: string,
+    description: string,
+  ): Promise<Project & { source: 'gemini' | 'rules' }> {
     const user = this.user(userId);
     const now = this.clock();
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(now));
     const draft = await this.ai.draftProject({
       description,
       today,
-      categories: [...new Set(this.store.equipment.list((e) => e.status === 'available').map((e) => e.category))].sort(),
+      categories: [
+        ...new Set(this.store.equipment.list((e) => e.status === 'available').map((e) => e.category)),
+      ].sort(),
     });
     if (!draft.deadline) {
-      throw new HttpError(422, 'DEADLINE_MISSING', 'Mention when the project is due, e.g. "due 5 December" or "in 2 weeks"');
+      throw new HttpError(
+        422,
+        'DEADLINE_MISSING',
+        'Mention when the project is due, e.g. "due 5 December" or "in 2 weeks"',
+      );
     }
     const deadline = Date.parse(`${draft.deadline}T18:00:00+05:30`);
     if (Number.isNaN(deadline) || deadline <= now || deadline > now + 180 * DAY_MS) {
-      throw new HttpError(422, 'DEADLINE_INVALID', 'The deadline must be a future date within the next 6 months');
+      throw new HttpError(
+        422,
+        'DEADLINE_INVALID',
+        'The deadline must be a future date within the next 6 months',
+      );
     }
     const supervisor =
-      this.store.users.list((u) => u.role === 'faculty' && u.departmentId === user.departmentId)[0] ?? this.store.users.list((u) => u.role === 'faculty')[0];
+      this.store.users.list((u) => u.role === 'faculty' && u.departmentId === user.departmentId)[0] ??
+      this.store.users.list((u) => u.role === 'faculty')[0];
     const project = this.store.projects.insert({
       title: draft.title,
       description,
@@ -420,7 +575,8 @@ export class LabService {
   async plan(userId: string, projectId: string, notes?: string) {
     const user = this.user(userId);
     const project = this.project(projectId);
-    if (project.ownerId !== userId) throw new HttpError(403, 'FORBIDDEN', 'You can only plan your own project');
+    if (project.ownerId !== userId)
+      throw new HttpError(403, 'FORBIDDEN', 'You can only plan your own project');
     const equipment = this.store.equipment.list((e) => e.status === 'available');
     const { needs, source } = await this.ai.planNeeds({
       projectTitle: project.title,
@@ -441,7 +597,12 @@ export class LabService {
       project: { id: project.id, title: project.title, deadline: project.deadline },
       items: items.map((i) => {
         const e = i.equipmentId ? this.equipment(i.equipmentId) : undefined;
-        return { ...i, equipmentName: e?.name, highDemand: e?.highDemand ?? false, label: i.start && i.end ? this.label({ start: i.start, end: i.end }) : undefined };
+        return {
+          ...i,
+          equipmentName: e?.name,
+          highDemand: e?.highDemand ?? false,
+          label: i.start && i.end ? this.label({ start: i.start, end: i.end }) : undefined,
+        };
       }),
     };
   }
@@ -450,15 +611,29 @@ export class LabService {
 
   reportFault(userId: string, equipmentId: string, description: string): FaultReport {
     this.equipment(equipmentId);
-    const duplicate = this.store.faultReports.list((f) => f.equipmentId === equipmentId && f.reportedBy === userId && f.status === 'open');
-    if (duplicate.length) throw new HttpError(409, 'DUPLICATE_REPORT', 'You already reported a fault on this equipment');
-    return this.store.faultReports.insert({ equipmentId, reportedBy: userId, description, status: 'open', createdAt: toIso(this.clock()) });
+    const duplicate = this.store.faultReports.list(
+      (f) => f.equipmentId === equipmentId && f.reportedBy === userId && f.status === 'open',
+    );
+    if (duplicate.length)
+      throw new HttpError(409, 'DUPLICATE_REPORT', 'You already reported a fault on this equipment');
+    return this.store.faultReports.insert({
+      equipmentId,
+      reportedBy: userId,
+      description,
+      status: 'open',
+      createdAt: toIso(this.clock()),
+    });
   }
 
   openFaults(facultyId: string) {
     return this.store.faultReports
       .list((f) => f.status === 'open' && this.inScope(facultyId, f.equipmentId))
-      .map((f) => ({ ...f, equipmentName: this.equipment(f.equipmentId).name, equipmentStatus: this.equipment(f.equipmentId).status, reporterName: this.user(f.reportedBy).name }));
+      .map((f) => ({
+        ...f,
+        equipmentName: this.equipment(f.equipmentId).name,
+        equipmentStatus: this.equipment(f.equipmentId).status,
+        reporterName: this.user(f.reportedBy).name,
+      }));
   }
 
   /** Faculty either take the item offline for maintenance, or resolve the fault and bring it back online. */
@@ -481,17 +656,24 @@ export class LabService {
     const user = this.user(userId);
     if (user.role === 'faculty') {
       return {
-        approvals: this.store.accessRequests.list((a) => a.status === 'pending' && this.inScope(userId, a.equipmentId)).length,
+        approvals: this.store.accessRequests.list(
+          (a) => a.status === 'pending' && this.inScope(userId, a.equipmentId),
+        ).length,
         conflicts: this.conflicts(userId).filter((g) => g.requestIds.length > 1).length,
-        faults: this.store.faultReports.list((f) => f.status === 'open' && this.inScope(userId, f.equipmentId)).length,
+        faults: this.store.faultReports.list(
+          (f) => f.status === 'open' && this.inScope(userId, f.equipmentId),
+        ).length,
       };
     }
     this.releaseNoShows();
     const now = this.clock();
     return {
-      upcoming: this.store.bookings.list((b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > now).length,
+      upcoming: this.store.bookings.list(
+        (b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > now,
+      ).length,
       queued: this.store.slotRequests.list((r) => r.userId === userId && r.status === 'pending').length,
-      awaitingApproval: this.store.accessRequests.list((a) => a.userId === userId && a.status === 'pending').length,
+      awaitingApproval: this.store.accessRequests.list((a) => a.userId === userId && a.status === 'pending')
+        .length,
     };
   }
 
@@ -499,6 +681,11 @@ export class LabService {
 
   utilisation() {
     const now = this.clock();
-    return utilisationReport({ start: now - 7 * DAY_MS, end: now }, this.store.equipment.list(), this.store.bookings.list(), this.store.departments.list());
+    return utilisationReport(
+      { start: now - 7 * DAY_MS, end: now },
+      this.store.equipment.list(),
+      this.store.bookings.list(),
+      this.store.departments.list(),
+    );
   }
 }

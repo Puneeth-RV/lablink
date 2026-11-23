@@ -33,8 +33,21 @@ describe('check-in and no-show release', () => {
 
 describe('planner.planSchedule', () => {
   const scope = equipment();
-  const printer = equipment({ id: 'p1', name: 'Printer', category: '3d-printer', requiredTraining: 'fab', maxSlotHours: 6 });
-  const ctx = { now: NOW, user: user(), project: project(), equipment: [scope, printer], bookings: [], accessRequests: [] };
+  const printer = equipment({
+    id: 'p1',
+    name: 'Printer',
+    category: '3d-printer',
+    requiredTraining: 'fab',
+    maxSlotHours: 6,
+  });
+  const ctx = {
+    now: NOW,
+    user: user(),
+    project: project(),
+    equipment: [scope, printer],
+    bookings: [],
+    accessRequests: [],
+  };
 
   it('schedules the earliest feasible slot before the deadline', () => {
     const [item] = planSchedule([{ category: 'oscilloscope', hours: 2, reason: 'debug' }], ctx);
@@ -69,25 +82,48 @@ describe('planner.planSchedule', () => {
   });
 
   it('respects the weekly fair-use cap', () => {
-    const heavy = Array.from({ length: 4 }, (_, d) => booking({ id: `h${d}`, userId: 'stu-1', ...slot(d + 1, 9, 3) }));
-    const [item] = planSchedule([{ category: 'oscilloscope', hours: 2, reason: 'x' }], { ...ctx, bookings: heavy });
+    const heavy = Array.from({ length: 4 }, (_, d) =>
+      booking({ id: `h${d}`, userId: 'stu-1', ...slot(d + 1, 9, 3) }),
+    );
+    const [item] = planSchedule([{ category: 'oscilloscope', hours: 2, reason: 'x' }], {
+      ...ctx,
+      bookings: heavy,
+    });
     expect(item?.issues[0]).toMatch(/fair-use cap/);
   });
 });
 
 describe('GeminiAssistant.planNeeds', () => {
-  const input = { projectTitle: 'P', description: 'D', categories: ['oscilloscope'], essentialCategories: ['oscilloscope'] };
+  const input = {
+    projectTitle: 'P',
+    description: 'D',
+    categories: ['oscilloscope'],
+    essentialCategories: ['oscilloscope'],
+  };
 
   it('keeps only known, unique categories', async () => {
     const generate = vi.fn().mockResolvedValue(
-      JSON.stringify({ needs: [{ category: 'oscilloscope', hours: 2, reason: 'r' }, { category: 'oscilloscope', hours: 1, reason: 'dup' }, { category: 'laser', hours: 1, reason: 'x' }] }),
+      JSON.stringify({
+        needs: [
+          { category: 'oscilloscope', hours: 2, reason: 'r' },
+          { category: 'oscilloscope', hours: 1, reason: 'dup' },
+          { category: 'laser', hours: 1, reason: 'x' },
+        ],
+      }),
     );
-    const res = await new GeminiAssistant(generate, new RulesAssistant(), 1000, () => undefined).planNeeds(input);
+    const res = await new GeminiAssistant(generate, new RulesAssistant(), 1000, () => undefined).planNeeds(
+      input,
+    );
     expect(res).toEqual({ source: 'gemini', needs: [{ category: 'oscilloscope', hours: 2, reason: 'r' }] });
   });
 
   it('falls back to essential categories', async () => {
-    const res = await new GeminiAssistant(vi.fn().mockRejectedValue(new Error('x')), new RulesAssistant(), 1000, () => undefined).planNeeds(input);
+    const res = await new GeminiAssistant(
+      vi.fn().mockRejectedValue(new Error('x')),
+      new RulesAssistant(),
+      1000,
+      () => undefined,
+    ).planNeeds(input);
     expect(res.source).toBe('rules');
     expect(res.needs[0]?.category).toBe('oscilloscope');
   });
@@ -95,18 +131,32 @@ describe('GeminiAssistant.planNeeds', () => {
 
 describe('API: planner, check-in and fault reports', () => {
   const setup = (now = NOW) => {
-    const app = createApp({ store: new Store(createSeed(now)), ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => now });
-    const login = async (userId: string) => (await request(app).post('/api/auth/login').send({ userId })).body.token as string;
+    const app = createApp({
+      store: new Store(createSeed(now)),
+      ai: new RulesAssistant(),
+      sessionSecret: SECRET,
+      clock: () => now,
+    });
+    const login = async (userId: string) =>
+      (await request(app).post('/api/auth/login').send({ userId })).body.token as string;
     return { app, login };
   };
 
   it('plans a project schedule for the owner only', async () => {
     const { app, login } = setup();
     const asha = await login('stu-asha');
-    const res = await request(app).post('/api/plan').set('Authorization', `Bearer ${asha}`).send({ projectId: 'proj-asha-iot' }).expect(200);
+    const res = await request(app)
+      .post('/api/plan')
+      .set('Authorization', `Bearer ${asha}`)
+      .send({ projectId: 'proj-asha-iot' })
+      .expect(200);
     expect(res.body.items.length).toBeGreaterThan(0);
     expect(res.body.items.some((i: { start?: string }) => i.start)).toBe(true);
-    await request(app).post('/api/plan').set('Authorization', `Bearer ${asha}`).send({ projectId: 'proj-ravi-ml' }).expect(403);
+    await request(app)
+      .post('/api/plan')
+      .set('Authorization', `Bearer ${asha}`)
+      .send({ projectId: 'proj-ravi-ml' })
+      .expect(403);
   });
 
   it('checks in during the window and releases no-shows afterwards', async () => {
@@ -116,30 +166,70 @@ describe('API: planner, check-in and fault reports', () => {
     const created = await request(early.app)
       .post('/api/bookings')
       .set('Authorization', `Bearer ${asha}`)
-      .send({ equipmentId: 'ece-iot-1', projectId: 'proj-asha-iot', start: toIso(start), end: toIso(start + 2 * HOUR_MS) })
+      .send({
+        equipmentId: 'ece-iot-1',
+        projectId: 'proj-asha-iot',
+        start: toIso(start),
+        end: toIso(start + 2 * HOUR_MS),
+      })
       .expect(201);
-    await request(early.app).post(`/api/bookings/${created.body.booking.id}/check-in`).set('Authorization', `Bearer ${asha}`).expect(409);
+    await request(early.app)
+      .post(`/api/bookings/${created.body.booking.id}/check-in`)
+      .set('Authorization', `Bearer ${asha}`)
+      .expect(409);
   });
 
   it('lets anyone report a fault and department faculty take it offline then resolve it', async () => {
     const { app, login } = setup();
     const asha = await login('stu-asha');
-    const report = await request(app).post('/api/equipment/ece-iot-1/faults').set('Authorization', `Bearer ${asha}`).send({ description: 'Soil sensor reads 0 always' }).expect(201);
-    await request(app).post('/api/equipment/ece-iot-1/faults').set('Authorization', `Bearer ${asha}`).send({ description: 'Soil sensor reads 0 always' }).expect(409);
-    await request(app).post('/api/equipment/ece-iot-1/faults').set('Authorization', `Bearer ${asha}`).send({ description: 'bad' }).expect(400);
+    const report = await request(app)
+      .post('/api/equipment/ece-iot-1/faults')
+      .set('Authorization', `Bearer ${asha}`)
+      .send({ description: 'Soil sensor reads 0 always' })
+      .expect(201);
+    await request(app)
+      .post('/api/equipment/ece-iot-1/faults')
+      .set('Authorization', `Bearer ${asha}`)
+      .send({ description: 'Soil sensor reads 0 always' })
+      .expect(409);
+    await request(app)
+      .post('/api/equipment/ece-iot-1/faults')
+      .set('Authorization', `Bearer ${asha}`)
+      .send({ description: 'bad' })
+      .expect(400);
 
     const other = await login('fac-das');
-    await request(app).post(`/api/faults/${report.body.id}`).set('Authorization', `Bearer ${other}`).send({ action: 'maintenance' }).expect(404);
+    await request(app)
+      .post(`/api/faults/${report.body.id}`)
+      .set('Authorization', `Bearer ${other}`)
+      .send({ action: 'maintenance' })
+      .expect(404);
     await request(app).get('/api/faults').set('Authorization', `Bearer ${asha}`).expect(403);
 
     const iyer = await login('fac-iyer');
     const open = await request(app).get('/api/faults').set('Authorization', `Bearer ${iyer}`).expect(200);
     expect(open.body.map((f: { id: string }) => f.id)).toContain(report.body.id);
-    await request(app).post(`/api/faults/${report.body.id}`).set('Authorization', `Bearer ${iyer}`).send({ action: 'maintenance' }).expect(200);
-    expect((await request(app).get('/api/equipment/ece-iot-1').set('Authorization', `Bearer ${iyer}`)).body.status).toBe('maintenance');
-    await request(app).post(`/api/faults/${report.body.id}`).set('Authorization', `Bearer ${iyer}`).send({ action: 'resolve' }).expect(200);
-    expect((await request(app).get('/api/equipment/ece-iot-1').set('Authorization', `Bearer ${iyer}`)).body.status).toBe('available');
-    await request(app).post(`/api/faults/${report.body.id}`).set('Authorization', `Bearer ${iyer}`).send({ action: 'resolve' }).expect(409);
+    await request(app)
+      .post(`/api/faults/${report.body.id}`)
+      .set('Authorization', `Bearer ${iyer}`)
+      .send({ action: 'maintenance' })
+      .expect(200);
+    expect(
+      (await request(app).get('/api/equipment/ece-iot-1').set('Authorization', `Bearer ${iyer}`)).body.status,
+    ).toBe('maintenance');
+    await request(app)
+      .post(`/api/faults/${report.body.id}`)
+      .set('Authorization', `Bearer ${iyer}`)
+      .send({ action: 'resolve' })
+      .expect(200);
+    expect(
+      (await request(app).get('/api/equipment/ece-iot-1').set('Authorization', `Bearer ${iyer}`)).body.status,
+    ).toBe('available');
+    await request(app)
+      .post(`/api/faults/${report.body.id}`)
+      .set('Authorization', `Bearer ${iyer}`)
+      .send({ action: 'resolve' })
+      .expect(409);
   });
 });
 
@@ -149,17 +239,29 @@ describe('API: no-show release frees the slot', () => {
     let now = start - DAY_MS;
     const store = new Store(createSeed(NOW));
     const app = createApp({ store, ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => now });
-    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body.token as string;
+    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body
+      .token as string;
     await request(app)
       .post('/api/bookings')
       .set('Authorization', `Bearer ${token}`)
-      .send({ equipmentId: 'ece-iot-1', projectId: 'proj-asha-iot', start: toIso(start), end: toIso(start + 2 * HOUR_MS) })
+      .send({
+        equipmentId: 'ece-iot-1',
+        projectId: 'proj-asha-iot',
+        start: toIso(start),
+        end: toIso(start + 2 * HOUR_MS),
+      })
       .expect(201);
     now = start + NO_SHOW_GRACE_MS + 60_000;
     // A day later the old session has expired (8 h TTL), so sign in again.
-    const fresh = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body.token as string;
-    const activity = await request(app).get('/api/activity').set('Authorization', `Bearer ${fresh}`).expect(200);
-    expect(activity.body.bookings.find((b: { equipmentId: string }) => b.equipmentId === 'ece-iot-1')).toBeUndefined();
+    const fresh = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body
+      .token as string;
+    const activity = await request(app)
+      .get('/api/activity')
+      .set('Authorization', `Bearer ${fresh}`)
+      .expect(200);
+    expect(
+      activity.body.bookings.find((b: { equipmentId: string }) => b.equipmentId === 'ece-iot-1'),
+    ).toBeUndefined();
     expect(store.bookings.list((b) => b.status === 'no-show')).toHaveLength(1);
   });
 });
@@ -175,14 +277,22 @@ describe('free-text projects', () => {
   });
 
   it('creates a validated project for the student and plans it', async () => {
-    const app = createApp({ store: new Store(createSeed(NOW)), ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => NOW });
-    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body.token as string;
+    const app = createApp({
+      store: new Store(createSeed(NOW)),
+      ai: new RulesAssistant(),
+      sessionSecret: SECRET,
+      clock: () => NOW,
+    });
+    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body
+      .token as string;
     const auth = { Authorization: `Bearer ${token}` };
 
     const res = await request(app)
       .post('/api/projects')
       .set(auth)
-      .send({ description: 'Line follower robot using an oscilloscope to tune the motor driver, due in 2 weeks' })
+      .send({
+        description: 'Line follower robot using an oscilloscope to tune the motor driver, due in 2 weeks',
+      })
       .expect(201);
     expect(res.body).toMatchObject({ ownerId: 'stu-asha', supervisorId: 'fac-iyer', source: 'rules' });
     expect(res.body.essentialCategories).toContain('oscilloscope');
@@ -195,12 +305,31 @@ describe('free-text projects', () => {
   });
 
   it('rejects descriptions without a valid future deadline', async () => {
-    const app = createApp({ store: new Store(createSeed(NOW)), ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => NOW });
-    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body.token as string;
-    const missing = await request(app).post('/api/projects').set('Authorization', `Bearer ${token}`).send({ description: 'A robot that sorts recyclable waste automatically' }).expect(422);
+    const app = createApp({
+      store: new Store(createSeed(NOW)),
+      ai: new RulesAssistant(),
+      sessionSecret: SECRET,
+      clock: () => NOW,
+    });
+    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body
+      .token as string;
+    const missing = await request(app)
+      .post('/api/projects')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ description: 'A robot that sorts recyclable waste automatically' })
+      .expect(422);
     expect(missing.body.error.code).toBe('DEADLINE_MISSING');
-    await request(app).post('/api/projects').set('Authorization', `Bearer ${token}`).send({ description: 'A robot that sorts waste, due 2020-01-01 at noon' }).expect(422);
-    const faculty = (await request(app).post('/api/auth/login').send({ userId: 'fac-iyer' })).body.token as string;
-    await request(app).post('/api/projects').set('Authorization', `Bearer ${faculty}`).send({ description: 'A robot that sorts waste, due in 2 weeks' }).expect(403);
+    await request(app)
+      .post('/api/projects')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ description: 'A robot that sorts waste, due 2020-01-01 at noon' })
+      .expect(422);
+    const faculty = (await request(app).post('/api/auth/login').send({ userId: 'fac-iyer' })).body
+      .token as string;
+    await request(app)
+      .post('/api/projects')
+      .set('Authorization', `Bearer ${faculty}`)
+      .send({ description: 'A robot that sorts waste, due in 2 weeks' })
+      .expect(403);
   });
 });
