@@ -147,3 +147,21 @@ describe('DiscoverPage', () => {
     expect(fetchMock).not.toHaveBeenCalledWith('/api/discover', expect.anything());
   });
 });
+
+describe('calendar export', () => {
+  it('produces a valid iCalendar event with escaped text and a reminder', async () => {
+    const { toIcs } = await import('../../src/client/lib/ics');
+    const ics = toIcs(
+      { uid: 'b1', title: 'Lab: Scope, A; B', location: 'Lab 101', description: 'Line1\nLine2', start: '2026-11-24T04:30:00.000Z', end: '2026-11-24T06:30:00.000Z' },
+      new Date('2026-11-23T00:00:00Z'),
+    );
+    const lines = ics.split('\r\n');
+    expect(lines[0]).toBe('BEGIN:VCALENDAR');
+    expect(lines).toContain('DTSTART:20261124T043000Z');
+    expect(lines).toContain('DTEND:20261124T063000Z');
+    expect(lines).toContain('SUMMARY:Lab: Scope\\, A\\; B');
+    expect(lines).toContain('DESCRIPTION:Line1\\nLine2');
+    expect(lines).toContain('TRIGGER:-PT15M');
+    expect(lines.at(-1)).toBe('END:VCALENDAR');
+  });
+});

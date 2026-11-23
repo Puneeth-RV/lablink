@@ -88,7 +88,7 @@ export type NamedAlternative = Alternative & { equipmentName?: string; label?: s
 export type BookingResult = { kind: 'booked'; booking: Booking } | { kind: 'queued'; request: SlotRequest };
 
 export interface Activity {
-  bookings: (Booking & { equipmentName: string; projectTitle: string; label: string; upcoming: boolean })[];
+  bookings: (Booking & { equipmentName: string; projectTitle: string; label: string; upcoming: boolean; canCheckIn: boolean })[];
   slotRequests: (SlotRequest & { equipmentName: string; projectTitle: string; label: string; alternatives: NamedAlternative[] })[];
   accessRequests: (AccessRequest & { equipmentName: string; projectTitle: string })[];
 }
@@ -122,4 +122,31 @@ export interface UtilisationReport {
   departments: { departmentId: string; name: string; rate: number }[];
   peakHours: { hour: number; bookedHours: number }[];
   suggestions: string[];
+}
+
+export interface PlanResponse {
+  source: 'gemini' | 'rules';
+  project: { id: string; title: string; deadline: string };
+  items: {
+    category: string;
+    hours: number;
+    reason: string;
+    equipmentId?: string;
+    equipmentName?: string;
+    highDemand: boolean;
+    start?: string;
+    end?: string;
+    label?: string;
+    issues: string[];
+  }[];
+}
+
+export interface OpenFault {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  equipmentStatus: 'available' | 'maintenance';
+  reporterName: string;
+  description: string;
+  createdAt: string;
 }

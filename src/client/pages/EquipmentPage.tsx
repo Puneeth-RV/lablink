@@ -32,6 +32,8 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
   const [outcome, setOutcome] = useState<Outcome>();
   const [busy, setBusy] = useState(false);
 
+  const [fault, setFault] = useState('');
+  const [faultResult, setFaultResult] = useState<{ kind: 'success' | 'error'; message: string }>();
   const [justification, setJustification] = useState('');
   const [accessResult, setAccessResult] = useState<{ kind: 'success' | 'error'; message: string }>();
 
@@ -74,6 +76,18 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
     setDay(p.day);
     setHour(p.hour);
     setOutcome(undefined);
+  }
+
+  async function reportFault(ev: FormEvent) {
+    ev.preventDefault();
+    try {
+      await api(`/equipment/${e.id}/faults`, { method: 'POST', body: { description: fault } });
+      setFaultResult({ kind: 'success', message: 'Thanks — the department has been notified.' });
+      setFault('');
+    } catch (err) {
+      const details = err instanceof ApiError && Array.isArray(err.details) ? err.details.map((d) => d.message).join(' ') : '';
+      setFaultResult({ kind: 'error', message: `${(err as Error).message}. ${details}`.trim() });
+    }
   }
 
   async function requestAccess(ev: FormEvent) {
@@ -241,6 +255,17 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
           <div aria-live="polite">{accessResult && <Status kind={accessResult.kind}>{accessResult.message}</Status>}</div>
         </section>
       )}
+      <details className="card">
+        <summary>Report a problem with this equipment</summary>
+        <form onSubmit={reportFault}>
+          <label htmlFor="fault">What is wrong?</label>
+          <textarea id="fault" rows={2} minLength={10} maxLength={500} required value={fault} onChange={(ev) => setFault(ev.target.value)} />
+          <button type="submit" className="btn">
+            Send report
+          </button>
+        </form>
+        <div aria-live="polite">{faultResult && <Status kind={faultResult.kind}>{faultResult.message}</Status>}</div>
+      </details>
     </>
   );
 }

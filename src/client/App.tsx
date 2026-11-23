@@ -12,6 +12,8 @@ import { ActivityPage } from './pages/ActivityPage';
 const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage'));
 const ConflictsPage = lazy(() => import('./pages/ConflictsPage'));
 const InsightsPage = lazy(() => import('./pages/InsightsPage'));
+const FaultsPage = lazy(() => import('./pages/FaultsPage'));
+const PlannerPage = lazy(() => import('./pages/PlannerPage'));
 
 export type Route =
   | { name: 'discover' }
@@ -19,15 +21,19 @@ export type Route =
   | { name: 'activity' }
   | { name: 'approvals' }
   | { name: 'conflicts' }
-  | { name: 'insights' };
+  | { name: 'insights' }
+  | { name: 'faults' }
+  | { name: 'planner' };
 
 const STUDENT_NAV: { route: Route['name']; label: string }[] = [
   { route: 'discover', label: 'Find equipment' },
+  { route: 'planner', label: 'Plan my project' },
   { route: 'activity', label: 'My bookings' },
 ];
 const FACULTY_NAV: { route: Route['name']; label: string }[] = [
   { route: 'approvals', label: 'Approvals' },
   { route: 'conflicts', label: 'Conflicts' },
+  { route: 'faults', label: 'Faults' },
   { route: 'insights', label: 'Insights' },
   { route: 'discover', label: 'Equipment' },
 ];
@@ -169,6 +175,8 @@ export function App() {
           {route.name === 'approvals' && <ApprovalsPage />}
           {route.name === 'conflicts' && <ConflictsPage />}
           {route.name === 'insights' && <InsightsPage />}
+          {route.name === 'faults' && <FaultsPage />}
+          {route.name === 'planner' && <PlannerPage profile={profile} onBooked={refreshProfile} />}
         </Suspense>
       </main>
       <footer className="app-footer">

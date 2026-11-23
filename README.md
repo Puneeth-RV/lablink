@@ -17,6 +17,9 @@ LabLink is a GenAI-powered campus laboratory resource-sharing platform. Students
 | Project-based access requests | Approval-gated equipment needs a request tied to a project. Each request gets an **AI pre-review** (summary and risk flags such as missing training or deadline pressure) for faculty. |
 | Faculty approvals | Faculty see only requests for equipment owned by their department, with approve/reject and an optional note. |
 | Optimising resource utilisation | Utilisation insights by department, equipment and hour, with recommendations such as *"Scope A is 89% booked while equivalent Scope C is 0% — redirect new requests there"*. |
+| Intelligent slot booking (planning) | **AI project planner**: a student picks a project and says what they need to do next. Gemini infers the equipment categories and hours needed, then the deterministic planner (`domain/planner.ts`) finds the earliest feasible slot for each one before the deadline. It respects training, approvals, the weekly cap and the student's other bookings, and the whole plan can be booked in one click. |
+| Optimising resource utilisation (no-shows) | **Check-in and no-show release**: check-in opens 10 minutes before a slot. If nobody checks in within 15 minutes, the rest of the slot is released for others. Bookings can be exported to any calendar (`.ics` with a 15-minute reminder). |
+| Keeping equipment usable | **Fault reporting**: anyone can report a problem with an item. Department faculty can take it offline (it then disappears from booking and planning) and bring it back once resolved. |
 | Fair and feasible conflict resolution | High-demand equipment uses a **fair queue** instead of first-come-first-served. The allocation engine ranks competing requests, grants the slot and gives everyone else ranked alternatives. Gemini explains each decision in plain language. |
 
 ### Approach and logic: deterministic decisions, AI understanding
@@ -37,6 +40,7 @@ The core design principle is that **decisions are deterministic, tested and audi
 
 **Where Gemini is used** (`src/server/services/ai.ts`):
 - Natural-language equipment discovery (structured JSON output, ranked IDs and reasons)
+- Project planning: inferring the equipment categories and hours a project needs, restricted to categories that exist on campus
 - Access-request pre-review for faculty (summary and risk flags)
 - Allocation explanations
 
@@ -78,12 +82,13 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
   - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
   - **Bounded memory**: only active bookings and requests from the last 30 days are loaded into the working set (full history stays in Firestore). The AI cache is size- and time-bounded, and missing AI reviews are generated in parallel.
   - The Cloud Run service scales to zero.
-- **Testing**: 69 Vitest tests:
+- **Testing**: 82 Vitest tests:
   - Domain unit tests: time, policy, scoring, deterministic allocation, alternatives, conflict grouping, utilisation.
   - API integration tests with supertest: auth, RBAC, validation, 409/422 flows, the approval workflow, conflict resolution, analytics.
   - AI service tests with a mocked model: caching, timeout, invalid JSON and API-error fallbacks, prompt delimiting, hallucination filtering.
   - Persistence tests with a fake document database: data survives a restart, stale data is reseeded, failed writes are logged without breaking requests, and snapshots are written in order.
   - Config validation tests.
+  - Feature tests for the planner (earliest feasible slot, no double-booking, training and cap issues), check-in windows and no-show release, fault reporting with department scoping, and calendar export.
   - Client tests with Testing Library, including **automated axe-core accessibility checks** and keyboard interaction.
 - **Accessibility**:
   - Semantic landmarks and a skip link; focus moves to the page heading on navigation.
@@ -128,4 +133,6 @@ gcloud run deploy lablink --source . --region asia-south1 --allow-unauthenticate
 3. Use **Viewing as** to switch to **Dr. Iyer (faculty, ECE)**:
    - *Approvals*: see the AI pre-review and approve Asha's FPGA request.
    - *Conflicts*: see three students competing for the same oscilloscope slot, each with a transparent score breakdown. Click **Apply fair allocation** to commit it and get an explanation.
+   - *Faults*: take a reported faulty oscilloscope offline.
    - *Insights*: see the over-used scope and the recommendation to redirect demand to an idle equivalent.
+4. Switch back to Asha and open **Plan my project**: describe the next steps (for example *"debug the I2C bus and solder the PCB"*) to get a feasible, bookable schedule before the deadline.
