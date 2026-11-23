@@ -1,10 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ThemeToggle } from './components/ThemeToggle';
-import { Loading } from './components/ui';
-import { api, session, type Profile } from './lib/api';
+import { PersonaSwitcher } from './components/PersonaSwitcher';
+import { Loading, Status } from './components/ui';
+import { api, session, type DemoUser, type Profile } from './lib/api';
+import { useResource } from './lib/hooks';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { EquipmentPage } from './pages/EquipmentPage';
-import { LoginPage } from './pages/LoginPage';
 import { ActivityPage } from './pages/ActivityPage';
 
 // Faculty-only pages are code-split so students never download them.
@@ -31,21 +32,55 @@ const FACULTY_NAV: { route: Route['name']; label: string }[] = [
   { route: 'discover', label: 'Equipment' },
 ];
 
+/** Persona shown to first-time visitors so the app is usable immediately, with no login wall. */
+const DEFAULT_PERSONA = 'stu-asha';
+const PERSONA_KEY = 'lablink.persona';
+
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [checking, setChecking] = useState(!!session.get());
+  const [error, setError] = useState<string>();
+  const [switching, setSwitching] = useState(false);
   const [route, setRoute] = useState<Route>({ name: 'discover' });
+  const users = useResource<DemoUser[]>('/auth/demo-users');
   const mainRef = useRef<HTMLElement>(null);
 
-  const loadProfile = useCallback(() => {
-    if (!session.get()) return;
-    api<Profile>('/me')
-      .then(setProfile)
-      .catch(() => session.clear())
-      .finally(() => setChecking(false));
+  const signInAs = useCallback(async (userId: string): Promise<Profile | null> => {
+    setSwitching(true);
+    setError(undefined);
+    try {
+      const { token } = await api<{ token: string }>('/auth/login', { method: 'POST', body: { userId } });
+      session.set(token);
+      sessionStorage.setItem(PERSONA_KEY, userId);
+      const next = await api<Profile>('/me');
+      setProfile(next);
+      return next;
+    } catch (err) {
+      setError((err as Error).message);
+      return null;
+    } finally {
+      setSwitching(false);
+    }
   }, []);
 
-  useEffect(loadProfile, [loadProfile]);
+  // Restore the current session, or start one as the default persona.
+  useEffect(() => {
+    let cancelled = false;
+    const restore = session.get() ? api<Profile>('/me').catch(() => null) : Promise.resolve(null);
+    void restore.then((existing) => {
+      if (cancelled) return;
+      if (existing) setProfile(existing);
+      else void signInAs(sessionStorage.getItem(PERSONA_KEY) ?? DEFAULT_PERSONA);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [signInAs]);
+
+  const refreshProfile = useCallback(() => {
+    api<Profile>('/me')
+      .then(setProfile)
+      .catch(() => undefined);
+  }, []);
 
   const navigate = useCallback((next: Route) => {
     setRoute(next);
@@ -53,24 +88,29 @@ export function App() {
     requestAnimationFrame(() => mainRef.current?.querySelector<HTMLElement>('h1')?.focus());
   }, []);
 
-  if (checking) return <Loading label="Restoring your session…" />;
+  async function switchPersona(userId: string) {
+    const next = await signInAs(userId);
+    if (next) navigate(next.user.role === 'faculty' ? { name: 'approvals' } : { name: 'discover' });
+  }
 
   if (!profile) {
     return (
-      <LoginPage
-        onSignedIn={(p) => {
-          setProfile(p);
-          setRoute(p.user.role === 'faculty' ? { name: 'approvals' } : { name: 'discover' });
-        }}
-      />
+      <main id="main" className="boot">
+        {error ? (
+          <Status kind="error">
+            Could not start LabLink: {error}{' '}
+            <button type="button" className="btn btn-small" onClick={() => void signInAs(DEFAULT_PERSONA)}>
+              Retry
+            </button>
+          </Status>
+        ) : (
+          <Loading label="Loading LabLink…" />
+        )}
+      </main>
     );
   }
 
   const nav = profile.user.role === 'faculty' ? FACULTY_NAV : STUDENT_NAV;
-  const signOut = () => {
-    session.clear();
-    setProfile(null);
-  };
 
   return (
     <>
@@ -108,20 +148,12 @@ export function App() {
               </span>
             </span>
           )}
+          {users.data && <PersonaSwitcher users={users.data} currentId={profile.user.id} busy={switching} onSwitch={(id) => void switchPersona(id)} />}
           <ThemeToggle />
-          <span className="avatar" aria-hidden="true">
-            {profile.user.name.replace('Dr. ', '').split(' ').map((w) => w[0]).join('').slice(0, 2)}
-          </span>
-          <span className="user-name">
-            {profile.user.name}
-            <span className="muted small">{profile.user.role === 'faculty' ? 'Faculty' : 'Student'} · {profile.user.departmentId.toUpperCase()}</span>
-          </span>
-          <button type="button" className="btn btn-ghost" onClick={signOut}>
-            Sign out
-          </button>
         </div>
       </header>
       <main id="main" ref={mainRef} tabIndex={-1}>
+        {error && <Status kind="error">{error}</Status>}
         <Suspense fallback={<Loading />}>
           {route.name === 'discover' && <DiscoverPage onOpen={(id) => navigate({ name: 'equipment', id })} />}
           {route.name === 'equipment' && (
@@ -131,17 +163,17 @@ export function App() {
               profile={profile}
               onBack={() => navigate({ name: 'discover' })}
               onOpen={(id) => navigate({ name: 'equipment', id })}
-              onBooked={loadProfile}
+              onBooked={refreshProfile}
             />
           )}
-          {route.name === 'activity' && <ActivityPage onChanged={loadProfile} />}
+          {route.name === 'activity' && <ActivityPage onChanged={refreshProfile} />}
           {route.name === 'approvals' && <ApprovalsPage />}
           {route.name === 'conflicts' && <ConflictsPage />}
           {route.name === 'insights' && <InsightsPage />}
         </Suspense>
       </main>
       <footer className="app-footer">
-        LabLink · All times are IST
+        LabLink · All times are IST · Demo personas stand in for campus single sign-on
       </footer>
     </>
   );

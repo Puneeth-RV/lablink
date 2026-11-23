@@ -218,16 +218,6 @@ tbody tr:hover { background: var(--surface-hover); }
 .dot-past, .dot-unavailable { background: var(--border-strong); }
 meter { width: 120px; height: 0.8rem; vertical-align: middle; }
 
-/* ---------- Login ---------- */
-.login { max-width: 560px; padding-top: 3rem; }
-.login-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-.persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-.persona { display: flex; gap: 0.5rem; align-items: center; font-weight: 500; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; cursor: pointer; margin: 0; background: var(--surface); }
-.persona:hover { border-color: var(--border-strong); }
-.persona input { width: auto; accent-color: var(--primary); }
-.persona:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
-.login-card { margin-top: 1rem; }
-
 /* ---------- Conflicts ---------- */
 .ranking { list-style: none; padding: 0; margin: 0; counter-reset: rank; }
 .ranking > li { padding: 0.9rem 0; border-top: 1px solid var(--border); }
@@ -248,10 +238,15 @@ details summary { cursor: pointer; font-weight: 600; color: var(--primary); marg
   .user-box { margin-left: 0; }
   .user-name { display: none; }
   main { padding: 1.25rem 1rem; }
-  .persona-grid { grid-template-columns: 1fr; }
   .score-row dt { min-width: 140px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- Persona switcher ---------- */
+.persona-switcher { display: flex; align-items: center; gap: 0.5rem; }
+.persona-switcher label { margin: 0; font-size: 0.85rem; color: var(--muted); font-weight: 550; white-space: nowrap; }
+.persona-switcher select { width: auto; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+.boot { padding-top: 4rem; }

@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeToggle } from '../../src/client/components/ThemeToggle';
 import { Alternatives, ScoreBreakdownView, Status } from '../../src/client/components/ui';
 import { DiscoverPage } from '../../src/client/pages/DiscoverPage';
-import { LoginPage } from '../../src/client/pages/LoginPage';
+import { App } from '../../src/client/App';
+import { PersonaSwitcher } from '../../src/client/components/PersonaSwitcher';
 
 async function expectNoA11yViolations(container: HTMLElement) {
   const results = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
@@ -88,23 +89,36 @@ describe('ThemeToggle', () => {
   });
 });
 
-describe('LoginPage', () => {
-  it('signs in with a keyboard-selectable persona and has no a11y violations', async () => {
-    const onSignedIn = vi.fn();
-    const { container } = render(<LoginPage onSignedIn={onSignedIn} />);
-    const asha = await screen.findByRole('radio', { name: /Asha Nair/ });
-    await expectNoA11yViolations(container);
-    await userEvent.click(asha);
-    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    await waitFor(() => expect(onSignedIn).toHaveBeenCalled());
+describe('App (no login wall)', () => {
+  it('opens straight into the app as the default persona', async () => {
+    const { container } = render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Find lab equipment' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({ method: 'POST' }));
     expect(sessionStorage.getItem('lablink.token')).toBe('tok');
+    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toBeInTheDocument();
+    await expectNoA11yViolations(container);
   });
+});
 
-  it('explains when no persona is chosen', async () => {
-    render(<LoginPage onSignedIn={vi.fn()} />);
-    await screen.findByRole('radio', { name: /Asha Nair/ });
-    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Choose an account');
+describe('PersonaSwitcher', () => {
+  it('groups personas by role and switches on change', async () => {
+    const onSwitch = vi.fn();
+    render(
+      <PersonaSwitcher
+        users={[
+          { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece' },
+          { id: 'fac-iyer', name: 'Dr. Iyer', role: 'faculty', departmentId: 'ece' },
+        ]}
+        currentId="stu-asha"
+        busy={false}
+        onSwitch={onSwitch}
+      />,
+    );
+    const select = screen.getByLabelText('Viewing as');
+    expect(screen.getByRole('group', { name: 'Faculty' })).toBeInTheDocument();
+    await userEvent.selectOptions(select, 'fac-iyer');
+    expect(onSwitch).toHaveBeenCalledWith('fac-iyer');
   });
 });
 

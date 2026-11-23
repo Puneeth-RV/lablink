@@ -94,7 +94,7 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
 
 ## Assumptions
 
-- **Authentication**: demo personas stand in for campus single sign-on. Tokens are real HMAC-signed sessions, but there is no password step.
+- **No login wall (by design)**: following the organisers' guidance that evaluators must reach the app without signing in, LabLink opens straight into the student view. A **"Viewing as"** selector in the header switches between student and faculty personas, which stand in for campus single sign-on. Security is still enforced server-side: every API call needs an HMAC-signed, expiring session token, and role and department checks apply on every request. In production, the persona selector would be replaced by Firebase Authentication or campus SSO.
 - **Data**: Firestore is the source of truth. On first boot, or when the demo data is more than 24 h old, it is seeded with demo data relative to the current date so the demo always looks current. Cloud Run runs a single instance (`--max-instances=1`) so the in-memory working set and Firestore stay consistent. Scaling out would mean reading through to Firestore with transactions.
 - **Time**: slots are whole hours between 09:00 and 18:00 campus time (IST). The weekly fair-use cap is 12 hours per student.
 - **Faculty scope**: faculty approve requests and resolve conflicts for equipment owned by their own department.
@@ -122,9 +122,9 @@ gcloud run deploy lablink --source . --region asia-south1 --allow-unauthenticate
 
 ## Demo walkthrough
 
-1. Sign in as **Asha (student)**. Under *Find equipment*, type *"debug I2C signals on my soil sensor"* to get AI recommendations. Open the Keysight oscilloscope and request a slot: it joins the fair queue.
+1. The app opens as **Asha (student)**, with no login needed. Under *Find equipment*, type *"debug I2C signals on my soil sensor"* to get AI recommendations. Open the Keysight oscilloscope and request a slot: it joins the fair queue.
 2. Try booking the 3D printer as Asha: you get a clear *training required* message plus alternatives.
-3. Sign in as **Dr. Iyer (faculty, ECE)**:
+3. Use **Viewing as** to switch to **Dr. Iyer (faculty, ECE)**:
    - *Approvals*: see the AI pre-review and approve Asha's FPGA request.
    - *Conflicts*: see three students competing for the same oscilloscope slot, each with a transparent score breakdown. Click **Apply fair allocation** to commit it and get an explanation.
    - *Insights*: see the over-used scope and the recommendation to redirect demand to an idle equivalent.
