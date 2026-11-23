@@ -76,8 +76,9 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
   - Hashed assets are served with `immutable` 1-year caching; responses are gzip-compressed.
   - AI responses are cached with a TTL; catalogue search is debounced.
   - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
+  - **Bounded memory**: only active bookings and requests from the last 30 days are loaded into the working set (full history stays in Firestore). The AI cache is size- and time-bounded, and missing AI reviews are generated in parallel.
   - The Cloud Run service scales to zero.
-- **Testing**: 68 Vitest tests:
+- **Testing**: 69 Vitest tests:
   - Domain unit tests: time, policy, scoring, deterministic allocation, alternatives, conflict grouping, utilisation.
   - API integration tests with supertest: auth, RBAC, validation, 409/422 flows, the approval workflow, conflict resolution, analytics.
   - AI service tests with a mocked model: caching, timeout, invalid JSON and API-error fallbacks, prompt delimiting, hallucination filtering.
