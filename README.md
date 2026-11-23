@@ -52,7 +52,9 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
 ```
 
 - **Google Cloud Run**: one container serves both the API and the static client (multi-stage `node:22-alpine` image, runs as a non-root user, scales to zero).
+- **Firebase Cloud Firestore**: durable storage with a **write-through** design. Reads come from an in-memory working set (O(1), no network latency per request). Every mutation is written through to Firestore in order (`services/persistence.ts`), so bookings, requests, approvals and allocations survive restarts and redeploys. Access uses the Cloud Run service identity through IAM, with no keys. If Firestore is unreachable at boot, the app logs it and serves from memory rather than going down.
 - **Gemini (Google GenAI SDK)**: discovery, reviews and explanations.
+- **Gemini model**: `gemini-flash-lite-latest`, chosen for low latency (about 1.5 s) and cost on short structured tasks.
 - **Secret Manager**: the session-signing secret (and the Gemini key) are injected at runtime, never stored in code or the image.
 - **Cloud Build**: builds the image from source on deploy.
 
@@ -75,10 +77,12 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
   - AI responses are cached with a TTL; catalogue search is debounced.
   - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
   - The Cloud Run service scales to zero.
-- **Testing**: 59 Vitest tests:
+- **Testing**: 68 Vitest tests:
   - Domain unit tests: time, policy, scoring, deterministic allocation, alternatives, conflict grouping, utilisation.
   - API integration tests with supertest: auth, RBAC, validation, 409/422 flows, the approval workflow, conflict resolution, analytics.
   - AI service tests with a mocked model: caching, timeout, invalid JSON and API-error fallbacks, prompt delimiting, hallucination filtering.
+  - Persistence tests with a fake document database: data survives a restart, stale data is reseeded, failed writes are logged without breaking requests, and snapshots are written in order.
+  - Config validation tests.
   - Client tests with Testing Library, including **automated axe-core accessibility checks** and keyboard interaction.
 - **Accessibility**:
   - Semantic landmarks and a skip link; focus moves to the page heading on navigation.
@@ -91,7 +95,7 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
 ## Assumptions
 
 - **Authentication**: demo personas stand in for campus single sign-on. Tokens are real HMAC-signed sessions, but there is no password step.
-- **Data**: data is in memory and seeded at startup relative to the current date, so the demo always looks current. Cloud Run runs a single instance (`--max-instances=1`) so state stays consistent. The `Store` class is the seam for a persistent database such as Firestore.
+- **Data**: Firestore is the source of truth. On first boot, or when the demo data is more than 24 h old, it is seeded with demo data relative to the current date so the demo always looks current. Cloud Run runs a single instance (`--max-instances=1`) so the in-memory working set and Firestore stay consistent. Scaling out would mean reading through to Firestore with transactions.
 - **Time**: slots are whole hours between 09:00 and 18:00 campus time (IST). The weekly fair-use cap is 12 hours per student.
 - **Faculty scope**: faculty approve requests and resolve conflicts for equipment owned by their own department.
 - **High-demand equipment**: flagged per item and allocated through the fair queue. Other equipment is booked instantly.
@@ -112,6 +116,7 @@ npm run build && npm start  # production build on :8080
 ```bash
 gcloud run deploy lablink --source . --region asia-south1 --allow-unauthenticated \
   --max-instances=1 --memory=512Mi \
+  --set-env-vars=PERSISTENCE=firestore,GOOGLE_CLOUD_PROJECT=<project-id> \
   --set-secrets=SESSION_SECRET=session-secret:latest,GEMINI_API_KEY=gemini-api-key:latest
 ```
 
