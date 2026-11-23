@@ -326,3 +326,6 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .segmented label:has(input:checked) { border-color: var(--text); }
 .segmented input { width: auto; accent-color: var(--primary); }
 .segmented label:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+
+/* Brand mark: white tile so the logo reads on both light and black backgrounds. */
+.brand img { background: #fff; border: 1px solid var(--border); border-radius: 7px; padding: 2px; }

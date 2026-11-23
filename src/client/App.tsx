@@ -136,7 +136,7 @@ export function App() {
       </a>
       <header className="app-header">
         <div className="brand">
-          <img src="/logo.svg" alt="" width="32" height="32" />
+          <img src="/logo.png" alt="" width="32" height="32" />
           <span>LabLink</span>
         </div>
         <nav aria-label="Main">
