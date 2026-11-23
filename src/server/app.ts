@@ -46,7 +46,8 @@ export function createApp({ store, ai, sessionSecret, clock = Date.now, staticDi
   app.use(compression());
   app.use(express.json({ limit: '10kb' }));
 
-  app.get('/healthz', (_req, res) => {
+  // Cloud Run reserves paths ending in 'z' (e.g. /healthz), so health lives under /api.
+  app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
 

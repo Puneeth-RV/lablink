@@ -26,7 +26,7 @@ async function login(userId: string): Promise<string> {
 
 describe('health & security headers', () => {
   it('reports healthy with hardened headers', async () => {
-    const res = await request(app).get('/healthz').expect(200);
+    const res = await request(app).get('/api/health').expect(200);
     expect(res.body).toEqual({ status: 'ok' });
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
     expect(res.headers['x-powered-by']).toBeUndefined();
