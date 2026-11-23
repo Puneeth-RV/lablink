@@ -120,7 +120,7 @@ describe('DiscoverPage', () => {
     await userEvent.type(screen.getByLabelText('What are you trying to build or measure?'), 'debug I2C signals');
     await userEvent.click(screen.getByRole('button', { name: 'Recommend equipment' }));
     expect(await screen.findByText(/Fits "debug I2C signals"/)).toBeInTheDocument();
-    expect(screen.getByText('✦ Gemini')).toBeInTheDocument();
+    expect(screen.getByText('Gemini')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'View availability and book Keysight Oscilloscope' }));
     expect(onOpen).toHaveBeenCalledWith('osc-1');

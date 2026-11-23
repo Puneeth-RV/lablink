@@ -141,7 +141,7 @@ export function App() {
         </Suspense>
       </main>
       <footer className="app-footer">
-        LabLink · Fair, explainable lab sharing · All times IST · AI by Google Gemini
+        LabLink · All times are IST
       </footer>
     </>
   );

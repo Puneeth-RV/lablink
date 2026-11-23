@@ -32,25 +32,15 @@ export function LoginPage({ onSignedIn }: { onSignedIn: (p: Profile) => void }) 
     <main id="main" className="login">
       <div className="login-top">
         <div className="brand">
-          <img src="/logo.svg" alt="" width="36" height="36" />
+          <img src="/logo.svg" alt="" width="28" height="28" />
           <span>LabLink</span>
         </div>
         <ThemeToggle />
       </div>
-      <section className="hero" aria-labelledby="hero-title">
-        <p className="eyebrow">Campus laboratory resource sharing</p>
-        <h1 id="hero-title">Every lab on campus, fairly shared.</h1>
-        <p className="lead">
-          Discover specialised equipment across departments, book slots, request project access and get faculty approvals — with
-          conflicts resolved transparently by deadline, fair share and need.
-        </p>
-        <ul className="feature-list">
-          <li>✦ AI equipment discovery with Gemini</li>
-          <li>⚖ Explainable fair allocation</li>
-          <li>✓ Faculty approvals with AI pre-review</li>
-          <li>▤ Utilisation insights</li>
-        </ul>
-      </section>
+      <h1>Sign in</h1>
+      <p className="muted">
+        Book lab equipment across departments, request project access and manage approvals. Choose a demo account to continue.
+      </p>
       {users.loading && <Loading />}
       {users.error && <Status kind="error">{users.error}</Status>}
       {users.data && (
@@ -79,7 +69,7 @@ export function LoginPage({ onSignedIn }: { onSignedIn: (p: Profile) => void }) 
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
-          <p className="muted small">Demo accounts stand in for campus single sign-on.</p>
+          <p className="muted small">Demo accounts stand in for the campus single sign-on.</p>
         </form>
       )}
     </main>

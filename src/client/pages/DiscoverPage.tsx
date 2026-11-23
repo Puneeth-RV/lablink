@@ -52,12 +52,11 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <>
-      <p className="eyebrow">Discover</p>
       <h1 tabIndex={-1}>Find lab equipment</h1>
-      <p className="lead">Search every department's labs, or describe your project and let Gemini match the right equipment.</p>
+      <p className="muted">Equipment from all departments. Describe what you need, or browse the full list below.</p>
 
-      <section aria-labelledby="ai-heading" className="card ai-card">
-        <h2 id="ai-heading">✦ Describe your project need</h2>
+      <section aria-labelledby="ai-heading" className="card">
+        <h2 id="ai-heading">Find by project need</h2>
         <form onSubmit={ask}>
           <label htmlFor="need">What are you trying to build or measure?</label>
           <textarea
@@ -71,7 +70,7 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
             aria-invalid={!!aiError}
           />
           <p id="need-hint" className="muted small">
-            LabLink matches your need to equipment across every department.
+            Suggestions are generated with Gemini and limited to equipment in the catalogue.
           </p>
           {aiError && (
             <p id="need-error" className="field-error" role="alert">
@@ -79,7 +78,7 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
             </p>
           )}
           <button type="submit" className="btn btn-primary" disabled={aiBusy}>
-            {aiBusy ? 'Finding matches…' : 'Recommend equipment'}
+            {aiBusy ? 'Searching…' : 'Recommend equipment'}
           </button>
         </form>
         <div aria-live="polite">

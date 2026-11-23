@@ -23,11 +23,11 @@ export default function ApprovalsPage() {
   return (
     <>
       <h1 tabIndex={-1}>Access approvals</h1>
-      <p className="muted">Project-based requests for equipment owned by your department, with an AI pre-review to speed up decisions.</p>
+      <p className="muted">Access requests for equipment in your department. Each request includes an automated pre-review.</p>
       <div aria-live="polite">{message && <Status kind={message.kind}>{message.text}</Status>}</div>
       {pending.loading && <Loading label="Loading requests and reviews…" />}
       {pending.error && <Status kind="error">{pending.error}</Status>}
-      {pending.data?.length === 0 && <p>No pending requests. 🎉</p>}
+      {pending.data?.length === 0 && <p className="muted">No pending requests.</p>}
       <ul className="list">
         {pending.data?.map((a) => (
           <li key={a.id} className="card">
@@ -46,7 +46,7 @@ export default function ApprovalsPage() {
                 {a.aiReview.riskFlags.length > 0 && (
                   <ul aria-label="Risk flags">
                     {a.aiReview.riskFlags.map((f) => (
-                      <li key={f}>⚠ {f}</li>
+                      <li key={f}>{f}</li>
                     ))}
                   </ul>
                 )}

@@ -24,7 +24,7 @@ export function Badge({ tone = 'neutral', children }: { tone?: 'neutral' | 'warn
 }
 
 export function SourceBadge({ source }: { source: 'gemini' | 'rules' }) {
-  return source === 'gemini' ? <Badge tone="info">✦ Gemini</Badge> : <Badge>Rule-based</Badge>;
+  return source === 'gemini' ? <Badge tone="info">Gemini</Badge> : <Badge>Rule-based</Badge>;
 }
 
 export function ViolationList({ items }: { items: string[] }) {
