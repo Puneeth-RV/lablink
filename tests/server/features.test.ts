@@ -163,3 +163,44 @@ describe('API: no-show release frees the slot', () => {
     expect(store.bookings.list((b) => b.status === 'no-show')).toHaveLength(1);
   });
 });
+
+describe('free-text projects', () => {
+  it('parses deadlines deterministically in the fallback', async () => {
+    const { parseDeadline } = await import('../../src/server/services/ai.js');
+    expect(parseDeadline('due 2026-12-05', '2026-11-23')).toBe('2026-12-05');
+    expect(parseDeadline('submit in 2 weeks', '2026-11-23')).toBe('2026-12-07');
+    expect(parseDeadline('due 5th december', '2026-11-23')).toBe('2026-12-05');
+    expect(parseDeadline('deadline january 10', '2026-11-23')).toBe('2027-01-10');
+    expect(parseDeadline('no date here', '2026-11-23')).toBeNull();
+  });
+
+  it('creates a validated project for the student and plans it', async () => {
+    const app = createApp({ store: new Store(createSeed(NOW)), ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => NOW });
+    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body.token as string;
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const res = await request(app)
+      .post('/api/projects')
+      .set(auth)
+      .send({ description: 'Line follower robot using an oscilloscope to tune the motor driver, due in 2 weeks' })
+      .expect(201);
+    expect(res.body).toMatchObject({ ownerId: 'stu-asha', supervisorId: 'fac-iyer', source: 'rules' });
+    expect(res.body.essentialCategories).toContain('oscilloscope');
+    expect(Date.parse(res.body.deadline)).toBeGreaterThan(NOW + 13 * DAY_MS);
+
+    const me = await request(app).get('/api/me').set(auth).expect(200);
+    expect(me.body.projects.map((p: { id: string }) => p.id)).toContain(res.body.id);
+    const plan = await request(app).post('/api/plan').set(auth).send({ projectId: res.body.id }).expect(200);
+    expect(plan.body.items[0].category).toBe('oscilloscope');
+  });
+
+  it('rejects descriptions without a valid future deadline', async () => {
+    const app = createApp({ store: new Store(createSeed(NOW)), ai: new RulesAssistant(), sessionSecret: SECRET, clock: () => NOW });
+    const token = (await request(app).post('/api/auth/login').send({ userId: 'stu-asha' })).body.token as string;
+    const missing = await request(app).post('/api/projects').set('Authorization', `Bearer ${token}`).send({ description: 'A robot that sorts recyclable waste automatically' }).expect(422);
+    expect(missing.body.error.code).toBe('DEADLINE_MISSING');
+    await request(app).post('/api/projects').set('Authorization', `Bearer ${token}`).send({ description: 'A robot that sorts waste, due 2020-01-01 at noon' }).expect(422);
+    const faculty = (await request(app).post('/api/auth/login').send({ userId: 'fac-iyer' })).body.token as string;
+    await request(app).post('/api/projects').set('Authorization', `Bearer ${faculty}`).send({ description: 'A robot that sorts waste, due in 2 weeks' }).expect(403);
+  });
+});

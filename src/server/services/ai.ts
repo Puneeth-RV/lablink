@@ -44,11 +44,26 @@ export interface PlanNeedsInput {
   essentialCategories: string[];
 }
 
+export interface ProjectDraftInput {
+  description: string;
+  /** Today's campus date (YYYY-MM-DD), so relative dates like "next Friday" resolve correctly. */
+  today: string;
+  categories: string[];
+}
+
+export interface ProjectDraft {
+  title: string;
+  /** YYYY-MM-DD, or null when no deadline could be found. */
+  deadline: string | null;
+  essentialCategories: string[];
+}
+
 export interface AiAssistant {
   discover(query: string, catalog: Equipment[]): Promise<DiscoveryResult>;
   explainAllocation(input: AllocationSummaryInput): Promise<{ text: string; source: 'gemini' | 'rules' }>;
   reviewAccessRequest(input: AccessReviewInput): Promise<AiReview>;
   planNeeds(input: PlanNeedsInput): Promise<{ needs: PlanNeed[]; source: 'gemini' | 'rules' }>;
+  draftProject(input: ProjectDraftInput): Promise<ProjectDraft & { source: 'gemini' | 'rules' }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,6 +74,31 @@ const STOP_WORDS = new Set(['i', 'a', 'an', 'the', 'to', 'for', 'my', 'of', 'and
 
 function tokens(text: string): string[] {
   return text.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 1 && !STOP_WORDS.has(t));
+}
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * Deterministic deadline extraction for the fallback path: ISO dates, "5 December" /
+ * "December 5", and "in N days|weeks". Returns YYYY-MM-DD or null.
+ */
+export function parseDeadline(text: string, today: string): string | null {
+  const base = new Date(`${today}T00:00:00Z`);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const iso = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (iso) return iso[0];
+  const rel = text.match(/\bin\s+(\d{1,2})\s+(day|week)s?\b/);
+  if (rel) return fmt(new Date(base.getTime() + Number(rel[1]) * (rel[2] === 'week' ? 7 : 1) * 86_400_000));
+  const dm = text.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3,})/) ?? null;
+  const md = text.match(/\b([a-z]{3,})\s+(\d{1,2})(?:st|nd|rd|th)?\b/) ?? null;
+  for (const [day, month] of [dm ? [dm[1], dm[2]] : null, md ? [md[2], md[1]] : null].filter(Boolean) as [string, string][]) {
+    const m = MONTHS.indexOf(month.slice(0, 3));
+    if (m < 0) continue;
+    let d = new Date(Date.UTC(base.getUTCFullYear(), m, Number(day)));
+    if (d < base) d = new Date(Date.UTC(base.getUTCFullYear() + 1, m, Number(day)));
+    return fmt(d);
+  }
+  return null;
 }
 
 export class RulesAssistant implements AiAssistant {
@@ -107,6 +147,18 @@ export class RulesAssistant implements AiAssistant {
     };
   }
 
+  async draftProject(input: ProjectDraftInput): Promise<ProjectDraft & { source: 'rules' }> {
+    const text = input.description.toLowerCase();
+    const words = tokens(input.description);
+    const essentialCategories = input.categories.filter((c) => c.split('-').some((part) => part.length > 2 && words.some((w) => w.startsWith(part) || part.startsWith(w))));
+    return {
+      title: input.description.split(/[.,;\n]/)[0]!.trim().slice(0, 60) || 'Untitled project',
+      deadline: parseDeadline(text, input.today),
+      essentialCategories,
+      source: 'rules',
+    };
+  }
+
   async planNeeds(input: PlanNeedsInput): Promise<{ needs: PlanNeed[]; source: 'rules' }> {
     return {
       needs: input.essentialCategories
@@ -127,6 +179,11 @@ const DiscoverySchema = z.object({
 const ExplanationSchema = z.object({ explanation: z.string().min(1).max(800) });
 const PlanSchema = z.object({
   needs: z.array(z.object({ category: z.string(), hours: z.number().int().min(1).max(6), reason: z.string().max(300) })).max(5),
+});
+const DraftSchema = z.object({
+  title: z.string().min(1).max(80),
+  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  essentialCategories: z.array(z.string()).max(6),
 });
 const ReviewSchema = z.object({ summary: z.string().min(1).max(400), riskFlags: z.array(z.string().max(200)).max(5) });
 
@@ -220,6 +277,16 @@ export class GeminiAssistant implements AiAssistant {
     const known = new Set(input.categories);
     const needs = result?.needs.filter((n, i, all) => known.has(n.category) && all.findIndex((x) => x.category === n.category) === i);
     return needs?.length ? { needs, source: 'gemini' as const } : this.fallback.planNeeds(input);
+  }
+
+  async draftProject(input: ProjectDraftInput) {
+    const result = await this.call(`draft:${input.today}:${input.description}`, DraftSchema, {
+      prompt: `Today is ${new Date(`${input.today}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })} ${input.today} (campus timezone IST); "next <weekday>" means the first such day after today. Available equipment categories: ${JSON.stringify(input.categories)}\n\n<user_input>${escapeTags(input.description)}</user_input>\n\nFrom the student's project description extract: a short title (max 8 words), the deadline as YYYY-MM-DD resolving relative dates against today (null if none is given), and the equipment categories (only from the list) the project essentially needs.`,
+      schema: { type: 'object', properties: { title: { type: 'string' }, deadline: { type: 'string', nullable: true }, essentialCategories: { type: 'array', items: { type: 'string' } } }, required: ['title', 'deadline', 'essentialCategories'] },
+    });
+    if (!result) return this.fallback.draftProject(input);
+    const known = new Set(input.categories);
+    return { ...result, essentialCategories: [...new Set(result.essentialCategories.filter((c) => known.has(c)))], source: 'gemini' as const };
   }
 
   /** Cached, time-boxed, schema-validated call. Returns null on any failure so callers fall back. */

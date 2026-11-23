@@ -28,6 +28,9 @@ const AccessBody = z.object({
 const DecisionBody = z.object({ decision: z.enum(['approved', 'rejected']), note: z.string().trim().max(500).optional() });
 const ResolveBody = z.object({ groupId: z.string().min(1).max(200) });
 const IdParam = z.object({ id });
+const ProjectBody = z.object({
+  description: z.string().trim().min(20, 'Describe the project and its deadline in at least 20 characters').max(1000),
+});
 const PlanBody = z.object({ projectId: id, notes: z.string().trim().max(500).optional() });
 const FaultBody = z.object({ description: z.string().trim().min(10, 'Describe the fault in at least 10 characters').max(500) });
 const FaultAction = z.object({ action: z.enum(['maintenance', 'resolve']) });
@@ -97,6 +100,10 @@ export function apiRouter(lab: LabService, tokens: TokenService): Router {
 
   router.post('/bookings/:id/check-in', auth, requireRole('student'), (req, res) => {
     res.json(lab.checkIn(session(res).userId, parse(IdParam, req.params).id));
+  });
+
+  router.post('/projects', auth, requireRole('student'), aiLimiter, async (req, res) => {
+    res.status(201).json(await lab.createProject(session(res).userId, parse(ProjectBody, req.body).description));
   });
 
   router.post('/plan', auth, requireRole('student'), aiLimiter, async (req, res) => {

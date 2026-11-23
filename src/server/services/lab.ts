@@ -379,6 +379,41 @@ export class LabService {
     return { ...group, ...described, explanation: explanation.text, explanationSource: explanation.source };
   }
 
+  // ---- projects from free text --------------------------------------------------------
+
+  /**
+   * Creates a project from a free-form description. Gemini extracts title, deadline and the
+   * equipment categories needed; the server validates every field before saving.
+   */
+  async createProject(userId: string, description: string): Promise<Project & { source: 'gemini' | 'rules' }> {
+    const user = this.user(userId);
+    const now = this.clock();
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(now));
+    const draft = await this.ai.draftProject({
+      description,
+      today,
+      categories: [...new Set(this.store.equipment.list((e) => e.status === 'available').map((e) => e.category))].sort(),
+    });
+    if (!draft.deadline) {
+      throw new HttpError(422, 'DEADLINE_MISSING', 'Mention when the project is due, e.g. "due 5 December" or "in 2 weeks"');
+    }
+    const deadline = Date.parse(`${draft.deadline}T18:00:00+05:30`);
+    if (Number.isNaN(deadline) || deadline <= now || deadline > now + 180 * DAY_MS) {
+      throw new HttpError(422, 'DEADLINE_INVALID', 'The deadline must be a future date within the next 6 months');
+    }
+    const supervisor =
+      this.store.users.list((u) => u.role === 'faculty' && u.departmentId === user.departmentId)[0] ?? this.store.users.list((u) => u.role === 'faculty')[0];
+    const project = this.store.projects.insert({
+      title: draft.title,
+      description,
+      ownerId: userId,
+      supervisorId: supervisor?.id ?? '',
+      deadline: toIso(deadline),
+      essentialCategories: draft.essentialCategories,
+    });
+    return { ...project, source: draft.source };
+  }
+
   // ---- AI project planner ----------------------------------------------------------
 
   /** Gemini infers equipment needs from the project; the planner finds feasible slots for each. */

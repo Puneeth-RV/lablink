@@ -17,6 +17,7 @@ LabLink is a GenAI-powered campus laboratory resource-sharing platform. Students
 | Project-based access requests | Approval-gated equipment needs a request tied to a project. Each request gets an **AI pre-review** (summary and risk flags such as missing training or deadline pressure) for faculty. |
 | Faculty approvals | Faculty see only requests for equipment owned by their department, with approve/reject and an optional note. |
 | Optimising resource utilisation | Utilisation insights by department, equipment and hour, with recommendations such as *"Scope A is 89% booked while equivalent Scope C is 0% — redirect new requests there"*. |
+| Project-based access (free-text projects) | Students describe a new project in their own words, for example *"smart wheelchair with obstacle detection, due next Friday"*. Gemini extracts the title, the deadline (relative dates are resolved against today) and the equipment categories needed. The server rejects missing, past or far-future deadlines and unknown categories, and the project is saved to Firestore. |
 | Intelligent slot booking (planning) | **AI project planner**: a student picks a project and says what they need to do next. Gemini infers the equipment categories and hours needed, then the deterministic planner (`domain/planner.ts`) finds the earliest feasible slot for each one before the deadline. It respects training, approvals, the weekly cap and the student's other bookings, and the whole plan can be booked in one click. |
 | Optimising resource utilisation (no-shows) | **Check-in and no-show release**: check-in opens 10 minutes before a slot. If nobody checks in within 15 minutes, the rest of the slot is released for others. Bookings can be exported to any calendar (`.ics` with a 15-minute reminder). |
 | Keeping equipment usable | **Fault reporting**: anyone can report a problem with an item. Department faculty can take it offline (it then disappears from booking and planning) and bring it back once resolved. |
@@ -82,7 +83,7 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
   - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
   - **Bounded memory**: only active bookings and requests from the last 30 days are loaded into the working set (full history stays in Firestore). The AI cache is size- and time-bounded, and missing AI reviews are generated in parallel.
   - The Cloud Run service scales to zero.
-- **Testing**: 82 Vitest tests:
+- **Testing**: 86 Vitest tests:
   - Domain unit tests: time, policy, scoring, deterministic allocation, alternatives, conflict grouping, utilisation.
   - API integration tests with supertest: auth, RBAC, validation, 409/422 flows, the approval workflow, conflict resolution, analytics.
   - AI service tests with a mocked model: caching, timeout, invalid JSON and API-error fallbacks, prompt delimiting, hallucination filtering.
