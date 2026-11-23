@@ -193,7 +193,7 @@ export class LabService {
       bookings: this.store.bookings
         .list((b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > this.clock() - DAY_MS)
         .sort(byStart)
-        .map((b) => ({ ...b, equipmentName: name(b.equipmentId), projectTitle: title(b.projectId), label: this.label(b) })),
+        .map((b) => ({ ...b, equipmentName: name(b.equipmentId), projectTitle: title(b.projectId), label: this.label(b), upcoming: Date.parse(b.start) > this.clock() })),
       slotRequests: this.store.slotRequests
         .list((r) => r.userId === userId)
         .sort(byStart)
