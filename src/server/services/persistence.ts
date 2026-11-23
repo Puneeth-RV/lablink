@@ -14,6 +14,24 @@ export interface DocumentDb {
   setMeta(meta: { seededAt: string }): Promise<void>;
 }
 
+/** History older than this stays in Firestore but is not loaded into the working set. */
+export const WORKING_SET_DAYS = 30;
+
+/**
+ * Keeps memory bounded: only active and recent bookings/requests are held in memory.
+ * Cancelled or long-finished records remain in Firestore for auditing.
+ */
+export function pruneWorkingSet(data: SeedData, now: number): SeedData {
+  const cutoff = now - WORKING_SET_DAYS * 24 * 60 * 60 * 1000;
+  const recent = (end: string) => Date.parse(end) >= cutoff;
+  return {
+    ...data,
+    bookings: data.bookings.filter((b) => b.status === 'confirmed' && recent(b.end)),
+    slotRequests: data.slotRequests.filter((r) => recent(r.end)),
+    accessRequests: data.accessRequests.filter((a) => a.status !== 'rejected' || recent(a.createdAt)),
+  };
+}
+
 /** Demo data is reseeded once it is older than this, so relative dates stay realistic. */
 export const SEED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -36,7 +54,7 @@ export class WriteThroughPersistence {
     const meta = await this.db.getMeta();
     if (meta && now - Date.parse(meta.seededAt) < SEED_MAX_AGE_MS) {
       const entries = await Promise.all(COLLECTIONS.map(async (c) => [c, await this.db.readAll(c)] as const));
-      return { data: Object.fromEntries(entries) as unknown as SeedData, seeded: false };
+      return { data: pruneWorkingSet(Object.fromEntries(entries) as unknown as SeedData, now), seeded: false };
     }
     const data = createSeed(now);
     await this.db.replaceAll(data);

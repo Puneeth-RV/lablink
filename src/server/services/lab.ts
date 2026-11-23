@@ -241,21 +241,25 @@ export class LabService {
 
   async pendingApprovals(facultyId: string) {
     const pending = this.store.accessRequests.list((a) => a.status === 'pending' && this.inScope(facultyId, a.equipmentId));
-    // Older seeded requests may lack a review; generate lazily and persist.
-    for (const a of pending.filter((x) => !x.aiReview)) {
-      const user = this.user(a.userId);
-      const equipment = this.equipment(a.equipmentId);
-      const project = this.project(a.projectId);
-      const aiReview = await this.ai.reviewAccessRequest({
-        equipment,
-        projectTitle: project.title,
-        projectDescription: project.description,
-        daysToDeadline: (Date.parse(project.deadline) - this.clock()) / DAY_MS,
-        justification: a.justification,
-        hasTraining: !equipment.requiredTraining || user.trainings.includes(equipment.requiredTraining),
-      });
-      this.store.accessRequests.update(a.id, { aiReview });
-    }
+    // Older seeded requests may lack a review: generate them in parallel, then persist.
+    await Promise.all(
+      pending
+        .filter((x) => !x.aiReview)
+        .map(async (a) => {
+          const user = this.user(a.userId);
+          const equipment = this.equipment(a.equipmentId);
+          const project = this.project(a.projectId);
+          const aiReview = await this.ai.reviewAccessRequest({
+            equipment,
+            projectTitle: project.title,
+            projectDescription: project.description,
+            daysToDeadline: (Date.parse(project.deadline) - this.clock()) / DAY_MS,
+            justification: a.justification,
+            hasTraining: !equipment.requiredTraining || user.trainings.includes(equipment.requiredTraining),
+          });
+          this.store.accessRequests.update(a.id, { aiReview });
+        }),
+    );
     return this.store.accessRequests
       .list((a) => a.status === 'pending' && this.inScope(facultyId, a.equipmentId))
       .map((a) => ({

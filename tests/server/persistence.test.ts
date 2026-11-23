@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../../src/server/config.js';
 import { createSeed } from '../../src/server/data/seed.js';
-import { COLLECTIONS, SEED_MAX_AGE_MS, WriteThroughPersistence, type DocumentDb } from '../../src/server/services/persistence.js';
+import { COLLECTIONS, pruneWorkingSet, SEED_MAX_AGE_MS, WriteThroughPersistence, type DocumentDb } from '../../src/server/services/persistence.js';
 import { Store, type CollectionName, type SeedData } from '../../src/server/services/store.js';
 import { NOW } from './fixtures.js';
 
@@ -47,7 +47,7 @@ describe('WriteThroughPersistence', () => {
     const first = new WriteThroughPersistence(db);
     const { data } = await first.loadOrSeed(createSeed, NOW);
     const store = new Store(data, first.listener);
-    const booking = store.bookings.insert({ equipmentId: 'ece-iot-1', userId: 'stu-asha', projectId: 'proj-asha-iot', start: 'a', end: 'b', status: 'confirmed', createdAt: 'c' });
+    const booking = store.bookings.insert({ equipmentId: 'ece-iot-1', userId: 'stu-asha', projectId: 'proj-asha-iot', start: new Date(NOW + 86_400_000).toISOString(), end: new Date(NOW + 90_000_000).toISOString(), status: 'confirmed', createdAt: new Date(NOW).toISOString() });
     store.accessRequests.update('seed-a1', { status: 'approved' });
     await first.flush();
 
@@ -85,6 +85,19 @@ describe('WriteThroughPersistence', () => {
     store.bookings.update('seed-b1', { status: 'confirmed' });
     await p.flush();
     expect((await db.readAll('bookings'))[0]).toMatchObject({ id: 'seed-b1', status: 'confirmed' });
+  });
+});
+
+describe('pruneWorkingSet', () => {
+  it('keeps memory bounded by dropping cancelled and old history', () => {
+    const seed = createSeed(NOW);
+    const old = { ...seed.bookings[0]!, id: 'old', end: new Date(NOW - 40 * 86_400_000).toISOString() };
+    const cancelled = { ...seed.bookings[0]!, id: 'cancelled', status: 'cancelled' as const };
+    const pruned = pruneWorkingSet({ ...seed, bookings: [...seed.bookings, old, cancelled] }, NOW);
+    expect(pruned.bookings.map((b) => b.id)).not.toContain('old');
+    expect(pruned.bookings.map((b) => b.id)).not.toContain('cancelled');
+    expect(pruned.bookings.length).toBe(seed.bookings.length);
+    expect(pruned.equipment).toBe(seed.equipment);
   });
 });
 
