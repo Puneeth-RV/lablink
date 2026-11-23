@@ -2,7 +2,7 @@
   "name": "lablink",
   "version": "1.0.0",
   "private": true,
-  "description": "LabLink \u2014 GenAI-powered campus laboratory resource-sharing platform",
+  "description": "LabLink — GenAI-powered campus laboratory resource-sharing platform",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -19,6 +19,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^9.4.1",
     "@google/genai": "^3.6.1",
     "compression": "^1.8.2",
     "express": "^5.3.0",

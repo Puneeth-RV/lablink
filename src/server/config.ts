@@ -8,6 +8,8 @@ const EnvSchema = z.object({
   GEMINI_MODEL: z.string().min(1).default('gemini-flash-lite-latest'),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
   SESSION_SECRET: z.string().min(32).optional(),
+  PERSISTENCE: z.enum(['memory', 'firestore']).default('memory'),
+  GOOGLE_CLOUD_PROJECT: z.string().min(1).optional(),
 });
 
 export interface AppConfig {
@@ -17,6 +19,8 @@ export interface AppConfig {
   geminiModel: string;
   geminiTimeoutMs: number;
   sessionSecret: string;
+  persistence: 'memory' | 'firestore';
+  gcpProject?: string;
 }
 
 /** Validates environment variables once at boot; fails fast on misconfiguration in production. */
@@ -33,5 +37,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     geminiTimeoutMs: parsed.GEMINI_TIMEOUT_MS,
     // Ephemeral secret outside production: sessions simply reset on restart.
     sessionSecret: parsed.SESSION_SECRET ?? randomBytes(32).toString('hex'),
+    persistence: parsed.PERSISTENCE,
+    gcpProject: parsed.GOOGLE_CLOUD_PROJECT,
   };
 }

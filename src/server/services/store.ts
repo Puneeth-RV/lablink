@@ -21,11 +21,20 @@ export interface SeedData {
 
 type Entity = { id: string };
 
+export type CollectionName = keyof SeedData;
+
+/** Called after every insert/update so changes can be written through to durable storage. */
+export type ChangeListener = (collection: CollectionName, entity: Entity) => void;
+
 /** Small id-indexed collection: O(1) lookups, insertion-ordered listing. */
 class Collection<T extends Entity> {
   private readonly items = new Map<string, T>();
 
-  constructor(initial: T[] = []) {
+  constructor(
+    private readonly name: CollectionName,
+    initial: T[],
+    private readonly onChange?: ChangeListener,
+  ) {
     for (const item of initial) this.items.set(item.id, item);
   }
 
@@ -41,6 +50,7 @@ class Collection<T extends Entity> {
   insert(item: Omit<T, 'id'>): T {
     const created = { ...item, id: randomUUID() } as T;
     this.items.set(created.id, created);
+    this.onChange?.(this.name, created);
     return created;
   }
 
@@ -49,6 +59,7 @@ class Collection<T extends Entity> {
     if (!current) throw new Error(`Entity ${id} not found`);
     const next = { ...current, ...patch };
     this.items.set(id, next);
+    this.onChange?.(this.name, next);
     return next;
   }
 
@@ -58,8 +69,9 @@ class Collection<T extends Entity> {
 }
 
 /**
- * In-memory repository seeded at boot. Kept behind this class so a persistent
- * implementation (e.g. Firestore) can replace it without touching routes or domain logic.
+ * In-memory working set: all reads are synchronous O(1) map lookups. Durability comes from
+ * an optional change listener that writes every mutation through to Firestore
+ * (see `services/persistence.ts`), so domain logic and routes stay storage-agnostic.
  */
 export class Store {
   readonly departments: Collection<Department>;
@@ -70,13 +82,13 @@ export class Store {
   readonly slotRequests: Collection<SlotRequest>;
   readonly accessRequests: Collection<AccessRequest>;
 
-  constructor(seed: SeedData) {
-    this.departments = new Collection(seed.departments);
-    this.users = new Collection(seed.users);
-    this.equipment = new Collection(seed.equipment);
-    this.projects = new Collection(seed.projects);
-    this.bookings = new Collection(seed.bookings);
-    this.slotRequests = new Collection(seed.slotRequests);
-    this.accessRequests = new Collection(seed.accessRequests);
+  constructor(seed: SeedData, onChange?: ChangeListener) {
+    this.departments = new Collection('departments', seed.departments, onChange);
+    this.users = new Collection('users', seed.users, onChange);
+    this.equipment = new Collection('equipment', seed.equipment, onChange);
+    this.projects = new Collection('projects', seed.projects, onChange);
+    this.bookings = new Collection('bookings', seed.bookings, onChange);
+    this.slotRequests = new Collection('slotRequests', seed.slotRequests, onChange);
+    this.accessRequests = new Collection('accessRequests', seed.accessRequests, onChange);
   }
 }
