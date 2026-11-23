@@ -2,7 +2,7 @@
   "name": "lablink",
   "version": "1.0.0",
   "private": true,
-  "description": "LabLink — GenAI-powered campus laboratory resource-sharing platform",
+  "description": "LabLink \u2014 GenAI-powered campus laboratory resource-sharing platform",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -13,7 +13,7 @@
     "dev:client": "vite",
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server/index.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
