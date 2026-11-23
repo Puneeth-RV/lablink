@@ -29,6 +29,19 @@ const EQUIPMENT: Equipment[] = [
   eq({ id: 'bio-pcr-1', name: 'PCR Thermal Cycler', category: 'pcr-machine', departmentId: 'bio', location: 'Biotech Lab, Room 5', description: '96-well thermal cycler for DNA amplification.', capabilities: ['DNA amplification', 'molecular biology'], requiredTraining: 'biosafety-l1', requiresApproval: true }),
   eq({ id: 'bio-micro-1', name: 'Fluorescence Microscope', category: 'microscope', departmentId: 'bio', location: 'Biotech Lab, Room 6', description: 'Inverted fluorescence microscope with camera.', capabilities: ['cell imaging', 'fluorescence', 'microscopy'] }),
   eq({ id: 'cse-vr-1', name: 'VR Development Station', category: 'vr-headset', departmentId: 'cse', location: 'HCI Lab, Room 9', description: 'Standalone VR headset with a tethered development PC.', capabilities: ['virtual reality', 'HCI research', 'Unity development'] }),
+  eq({ id: 'ece-fg-1', name: 'Tektronix Arbitrary Function Generator', category: 'function-generator', departmentId: 'ece', location: 'ECE Block, Lab 101', description: '25 MHz two-channel function and arbitrary waveform generator.', capabilities: ['signal generation', 'waveform synthesis', 'circuit testing'] }),
+  eq({ id: 'ece-la-1', name: 'Saleae 16-Channel Logic Analyzer', category: 'logic-analyzer', departmentId: 'ece', location: 'Embedded Lab, Room 118', description: 'USB logic analyzer with protocol decoders for embedded debugging.', capabilities: ['I2C/SPI/UART decoding', 'digital debugging', 'timing analysis'] }),
+  eq({ id: 'ece-psu-1', name: 'Programmable DC Power Supply', category: 'power-supply', departmentId: 'ece', location: 'ECE Block, Lab 102', description: 'Triple-output 30 V / 3 A bench supply with current limiting.', capabilities: ['bench power', 'current limiting', 'battery simulation'] }),
+  eq({ id: 'ece-vna-1', name: 'Vector Network Analyzer', category: 'spectrum-analyzer', departmentId: 'ece', location: 'RF Lab, Room 110', description: '6 GHz VNA for antenna and filter characterisation.', capabilities: ['antenna tuning', 'S-parameter measurement', 'RF analysis'], requiresApproval: true }),
+  eq({ id: 'cse-pi-1', name: 'Raspberry Pi 5 Cluster', category: 'sbc-cluster', departmentId: 'cse', location: 'Systems Lab, Room 3', description: 'Eight-node Raspberry Pi cluster for distributed systems experiments.', capabilities: ['distributed systems', 'Kubernetes', 'edge computing'] }),
+  eq({ id: 'cse-robot-1', name: 'UR5e Collaborative Robot Arm', category: 'robot-arm', departmentId: 'cse', location: 'Robotics Lab, Room 11', description: 'Six-axis collaborative arm with ROS 2 support.', capabilities: ['robotics', 'pick and place', 'ROS 2', 'computer vision'], requiresApproval: true, requiredTraining: 'robot-safety', highDemand: true, maxSlotHours: 2 }),
+  eq({ id: 'cse-jetson-2', name: 'Jetson AGX Orin Dev Kit', category: 'embedded-ai-kit', departmentId: 'cse', location: 'Robotics Lab, Room 11', description: 'High-performance edge AI module for robotics and multi-camera vision.', capabilities: ['edge AI', 'computer vision', 'robotics', 'model deployment'] }),
+  eq({ id: 'mech-cnc-1', name: 'Desktop CNC Mill', category: 'cnc-machine', departmentId: 'mech', location: 'Fabrication Lab', description: 'Three-axis CNC mill for aluminium and plastic parts.', capabilities: ['machining', 'mechanical parts', 'prototyping'], requiredTraining: 'fabrication-safety', requiresApproval: true, maxSlotHours: 4 }),
+  eq({ id: 'mech-utm-1', name: 'Universal Testing Machine', category: 'testing-machine', departmentId: 'mech', location: 'Materials Lab, Room 4', description: '10 kN machine for tensile, compression and bend tests.', capabilities: ['tensile testing', 'material characterisation', 'stress-strain curves'], requiresApproval: true }),
+  eq({ id: 'mech-thermal-1', name: 'FLIR Thermal Imaging Camera', category: 'thermal-camera', departmentId: 'mech', location: 'Mechatronics Lab, Room 12', description: 'Handheld thermal camera for heat-dissipation and fault analysis.', capabilities: ['thermal imaging', 'heat analysis', 'PCB hotspot detection'] }),
+  eq({ id: 'bio-cent-1', name: 'Refrigerated Microcentrifuge', category: 'centrifuge', departmentId: 'bio', location: 'Biotech Lab, Room 5', description: '24-place refrigerated centrifuge up to 15,000 rpm.', capabilities: ['sample separation', 'DNA extraction', 'cell pelleting'], requiredTraining: 'biosafety-l1' }),
+  eq({ id: 'bio-spec-1', name: 'UV-Vis Spectrophotometer', category: 'spectrophotometer', departmentId: 'bio', location: 'Biotech Lab, Room 6', description: 'UV-visible spectrophotometer for absorbance and concentration assays.', capabilities: ['absorbance measurement', 'protein quantification', 'water quality analysis'] }),
+  eq({ id: 'bio-bsc-1', name: 'Class II Biosafety Cabinet', category: 'biosafety-cabinet', departmentId: 'bio', location: 'Biotech Lab, Room 5', description: 'Sterile workspace for handling cultures and biological samples.', capabilities: ['sterile handling', 'cell culture', 'microbiology'], requiredTraining: 'biosafety-l1', highDemand: true }),
 ];
 
 const student = (id: string, name: string, departmentId: string, trainings: string[]): User => ({ id, name, role: 'student', departmentId, trainings });
@@ -91,6 +104,10 @@ export function createSeed(now: number = Date.now()): SeedData {
     book('cse-gpu-1', 'stu-ravi', 'proj-ravi-ml', -1, 9, 4),
     book('cse-gpu-1', 'stu-arjun', 'proj-arjun-llm', -2, 13, 4),
     book('bio-micro-1', 'stu-kabir', 'proj-kabir-bio', -1, 14, 3),
+    book('ece-la-1', 'stu-neha', 'proj-neha-radar', -2, 14, 2),
+    book('cse-pi-1', 'stu-arjun', 'proj-arjun-llm', -4, 10, 3),
+    book('bio-spec-1', 'stu-kabir', 'proj-kabir-bio', -3, 11, 2),
+    book('mech-thermal-1', 'stu-meera', 'proj-meera-robot', -2, 15, 1),
     book('ece-osc-1', 'stu-neha', 'proj-neha-radar', 1, 14, 3),
     book('cse-gpu-1', 'stu-arjun', 'proj-arjun-llm', 2, 9, 4),
   ];

@@ -44,13 +44,13 @@ export default function ConflictsPage() {
       {groups.error && <Status kind="error">{groups.error}</Status>}
       {groups.data?.length === 0 && <p>No open conflicts in your department.</p>}
       {groups.data?.map((g) => (
-        <section key={g.id} className="card tone-warn" aria-labelledby={`g-${g.id}`}>
+        <section key={g.id} className="card" aria-labelledby={`g-${g.id}`}>
           <h2 id={`g-${g.id}`} className="h3">
             {g.equipmentName} · {g.label} <Badge tone="warn">{g.ranking.length} requests</Badge>
           </h2>
           <ol className="ranking">
             {g.ranking.map((r, i) => (
-              <li key={r.requestId} className={r.decision === 'allocated' ? 'rank-win' : 'rank-lose'}>
+              <li key={r.requestId}>
                 <p>
                   <strong>
                     #{i + 1} {r.studentName}

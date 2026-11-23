@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { EquipmentIcon } from '../components/EquipmentIcon';
 import { Alternatives, Badge, Loading, Status, ViolationList } from '../components/ui';
 import { api, ApiError, type AccessRequest, type Activity, type BookingResult, type Equipment, type NamedAlternative, type Profile, type Slot } from '../lib/api';
 import { campusDate, campusIso, campusParts, formatDate, formatSlot, formatTime, titleCase } from '../lib/format';
@@ -109,10 +110,15 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
       <button type="button" className="link back" onClick={onBack}>
         ← Back to equipment
       </button>
-      <h1 tabIndex={-1}>{e.name}</h1>
-      <p className="muted">
-        {e.location} · {titleCase(e.category)} · max {e.maxSlotHours} h per slot
-      </p>
+      <div className="equipment-head">
+        <EquipmentIcon category={e.category} size={40} large />
+        <div>
+          <h1 tabIndex={-1}>{e.name}</h1>
+          <p className="muted">
+            {e.location} · {titleCase(e.category)} · max {e.maxSlotHours} h per slot
+          </p>
+        </div>
+      </div>
       <p>{e.description}</p>
       <p className="badges">
         {e.capabilities.map((c) => (

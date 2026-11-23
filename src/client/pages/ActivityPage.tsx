@@ -66,7 +66,7 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <ul className="list">
                 {activity.data.bookings.map((b) => (
-                  <li key={b.id} className={`card row-between ${b.checkedInAt ? 'tone-ok' : 'tone-ok-soft'}`}>
+                  <li key={b.id} className="card row-between">
                     <span>
                       <strong>{b.equipmentName}</strong> · {b.label}
                       <br />
@@ -108,7 +108,7 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <ul className="list">
                 {activity.data.slotRequests.map((r) => (
-                  <li key={r.id} className={`card tone-${TONE[r.status]}`}>
+                  <li key={r.id} className="card">
                     <p>
                       <strong>{r.equipmentName}</strong> · {r.label} <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>
                     </p>
@@ -129,7 +129,7 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <ul className="list">
                 {activity.data.accessRequests.map((a) => (
-                  <li key={a.id} className={`card tone-${a.status === 'pending' ? 'info' : TONE[a.status]}`}>
+                  <li key={a.id} className="card">
                     <p>
                       <strong>{a.equipmentName}</strong> for {a.projectTitle} <Badge tone={a.status === 'pending' ? 'info' : TONE[a.status]}>{a.status === 'pending' ? 'Awaiting approval' : LABEL[a.status]}</Badge>
                     </p>

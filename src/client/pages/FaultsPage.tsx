@@ -31,7 +31,7 @@ export default function FaultsPage() {
       {faults.data?.length === 0 && <p className="muted">No open fault reports.</p>}
       <ul className="list">
         {faults.data?.map((f) => (
-          <li key={f.id} className={`card tone-${f.equipmentStatus === 'maintenance' ? 'danger' : 'warn'}`}>
+          <li key={f.id} className="card">
             <h2 className="h3">
               {f.equipmentName}{' '}
               {f.equipmentStatus === 'maintenance' ? <Badge tone="danger">Offline</Badge> : <Badge tone="ok">In service</Badge>}
