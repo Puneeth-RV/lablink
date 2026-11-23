@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { ThemeToggle } from './components/ThemeToggle';
 import { Loading } from './components/ui';
 import { api, session, type Profile } from './lib/api';
 import { DiscoverPage } from './pages/DiscoverPage';
@@ -78,7 +79,8 @@ export function App() {
       </a>
       <header className="app-header">
         <div className="brand">
-          <span aria-hidden="true">🔬</span> LabLink
+          <img src="/logo.svg" alt="" width="32" height="32" />
+          <span>LabLink</span>
         </div>
         <nav aria-label="Main">
           <ul>
@@ -97,9 +99,6 @@ export function App() {
           </ul>
         </nav>
         <div className="user-box">
-          <span>
-            {profile.user.name} <span className="muted">({profile.user.role})</span>
-          </span>
           {profile.user.role === 'student' && (
             <span className="usage">
               <label htmlFor="usage-meter">Lab hours this week</label>
@@ -109,6 +108,14 @@ export function App() {
               </span>
             </span>
           )}
+          <ThemeToggle />
+          <span className="avatar" aria-hidden="true">
+            {profile.user.name.replace('Dr. ', '').split(' ').map((w) => w[0]).join('').slice(0, 2)}
+          </span>
+          <span className="user-name">
+            {profile.user.name}
+            <span className="muted small">{profile.user.role === 'faculty' ? 'Faculty' : 'Student'} · {profile.user.departmentId.toUpperCase()}</span>
+          </span>
           <button type="button" className="btn btn-ghost" onClick={signOut}>
             Sign out
           </button>
@@ -133,7 +140,9 @@ export function App() {
           {route.name === 'insights' && <InsightsPage />}
         </Suspense>
       </main>
-      <footer className="app-footer">LabLink · fair, explainable lab sharing · all times IST</footer>
+      <footer className="app-footer">
+        LabLink · Fair, explainable lab sharing · All times IST · AI by Google Gemini
+      </footer>
     </>
   );
 }

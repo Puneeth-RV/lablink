@@ -52,10 +52,12 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <>
+      <p className="eyebrow">Discover</p>
       <h1 tabIndex={-1}>Find lab equipment</h1>
+      <p className="lead">Search every department's labs, or describe your project and let Gemini match the right equipment.</p>
 
-      <section aria-labelledby="ai-heading" className="card">
-        <h2 id="ai-heading">Describe your project need</h2>
+      <section aria-labelledby="ai-heading" className="card ai-card">
+        <h2 id="ai-heading">✦ Describe your project need</h2>
         <form onSubmit={ask}>
           <label htmlFor="need">What are you trying to build or measure?</label>
           <textarea

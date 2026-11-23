@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { Loading, Status } from '../components/ui';
 import { api, session, type DemoUser, type Profile, type User } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -29,15 +30,31 @@ export function LoginPage({ onSignedIn }: { onSignedIn: (p: Profile) => void }) 
 
   return (
     <main id="main" className="login">
-      <h1>LabLink</h1>
-      <p className="lead">
-        Discover specialised lab equipment across departments, book slots fairly, request project access and get faculty approvals —
-        with conflicts resolved transparently by deadline, fairness and need.
-      </p>
+      <div className="login-top">
+        <div className="brand">
+          <img src="/logo.svg" alt="" width="36" height="36" />
+          <span>LabLink</span>
+        </div>
+        <ThemeToggle />
+      </div>
+      <section className="hero" aria-labelledby="hero-title">
+        <p className="eyebrow">Campus laboratory resource sharing</p>
+        <h1 id="hero-title">Every lab on campus, fairly shared.</h1>
+        <p className="lead">
+          Discover specialised equipment across departments, book slots, request project access and get faculty approvals — with
+          conflicts resolved transparently by deadline, fair share and need.
+        </p>
+        <ul className="feature-list">
+          <li>✦ AI equipment discovery with Gemini</li>
+          <li>⚖ Explainable fair allocation</li>
+          <li>✓ Faculty approvals with AI pre-review</li>
+          <li>▤ Utilisation insights</li>
+        </ul>
+      </section>
       {users.loading && <Loading />}
       {users.error && <Status kind="error">{users.error}</Status>}
       {users.data && (
-        <form onSubmit={submit} className="card" aria-describedby={error ? 'login-error' : undefined}>
+        <form onSubmit={submit} className="card login-card" aria-describedby={error ? 'login-error' : undefined}>
           {(['student', 'faculty'] as const).map((role) => (
             <fieldset key={role}>
               <legend>{role === 'student' ? 'Sign in as a student' : 'Sign in as faculty'}</legend>

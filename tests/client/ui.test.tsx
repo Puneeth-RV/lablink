@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ThemeToggle } from '../../src/client/components/ThemeToggle';
 import { Alternatives, ScoreBreakdownView, Status } from '../../src/client/components/ui';
 import { DiscoverPage } from '../../src/client/pages/DiscoverPage';
 import { LoginPage } from '../../src/client/pages/LoginPage';
@@ -73,6 +74,17 @@ describe('shared UI components', () => {
     await userEvent.tab();
     await userEvent.keyboard('{Enter}');
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ equipmentId: 'osc-2' }));
+  });
+});
+
+describe('ThemeToggle', () => {
+  it('switches theme, persists the choice and updates its accessible name', async () => {
+    document.documentElement.dataset.theme = 'light';
+    render(<ThemeToggle />);
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('lablink.theme')).toBe('dark');
+    expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeInTheDocument();
   });
 });
 
