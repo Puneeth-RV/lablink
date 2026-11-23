@@ -36,7 +36,7 @@ beforeEach(() => {
   sessionStorage.clear();
   fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/auth/demo-users') return json([{ id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece' }, { id: 'fac-iyer', name: 'Dr. Iyer', role: 'faculty', departmentId: 'ece' }]);
-    if (url === '/api/auth/login') return json({ token: 'tok', user: { id: 'stu-asha' } });
+    if (url === '/api/auth/login') return json({ token: 'tok', profile: { user: { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece', trainings: [] }, projects: [], usage: { hours: 2, cap: 12 } } });
     if (url === '/api/me') return json({ user: { id: 'stu-asha', name: 'Asha Nair', role: 'student', departmentId: 'ece', trainings: [] }, projects: [], usage: { hours: 2, cap: 12 } });
     if (url === '/api/meta') return json({ departments: [{ id: 'ece', name: 'ECE' }], categories: ['oscilloscope'] });
     if (url.startsWith('/api/equipment')) return json([EQUIPMENT]);

@@ -44,7 +44,8 @@ export function apiRouter(lab: LabService, tokens: TokenService): Router {
     const { userId } = parse(LoginBody, req.body);
     if (!DEMO_USER_IDS.includes(userId)) throw new HttpError(401, 'UNAUTHENTICATED', 'Unknown account');
     const user = lab.user(userId);
-    res.json({ token: tokens.issue(user.id, user.role), user });
+    // Return the full profile so the client needs no extra round trip after signing in.
+    res.json({ token: tokens.issue(user.id, user.role), profile: lab.profile(user.id) });
   });
 
   router.get('/me', auth, (_req, res) => {

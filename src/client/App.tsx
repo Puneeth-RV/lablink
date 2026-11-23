@@ -48,10 +48,9 @@ export function App() {
     setSwitching(true);
     setError(undefined);
     try {
-      const { token } = await api<{ token: string }>('/auth/login', { method: 'POST', body: { userId } });
+      const { token, profile: next } = await api<{ token: string; profile: Profile }>('/auth/login', { method: 'POST', body: { userId } });
       session.set(token);
       sessionStorage.setItem(PERSONA_KEY, userId);
-      const next = await api<Profile>('/me');
       setProfile(next);
       return next;
     } catch (err) {
