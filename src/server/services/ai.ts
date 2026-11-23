@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { AiReview, Equipment } from '../domain/types.js';
+import type { AiReview, Equipment, PlanNeed } from '../domain/types.js';
 
 /** A single structured-output call to an LLM; injected so tests never hit the network. */
 export type GenerateJson = (args: { system: string; prompt: string; schema: object; signal: AbortSignal }) => Promise<string>;
@@ -36,10 +36,19 @@ export interface AccessReviewInput {
   hasTraining: boolean;
 }
 
+export interface PlanNeedsInput {
+  projectTitle: string;
+  description: string;
+  /** Categories that exist on campus; the model may only choose from these. */
+  categories: string[];
+  essentialCategories: string[];
+}
+
 export interface AiAssistant {
   discover(query: string, catalog: Equipment[]): Promise<DiscoveryResult>;
   explainAllocation(input: AllocationSummaryInput): Promise<{ text: string; source: 'gemini' | 'rules' }>;
   reviewAccessRequest(input: AccessReviewInput): Promise<AiReview>;
+  planNeeds(input: PlanNeedsInput): Promise<{ needs: PlanNeed[]; source: 'gemini' | 'rules' }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +106,15 @@ export class RulesAssistant implements AiAssistant {
       source: 'rules',
     };
   }
+
+  async planNeeds(input: PlanNeedsInput): Promise<{ needs: PlanNeed[]; source: 'rules' }> {
+    return {
+      needs: input.essentialCategories
+        .filter((c) => input.categories.includes(c))
+        .map((category) => ({ category, hours: 2, reason: `Listed as essential for "${input.projectTitle}".` })),
+      source: 'rules',
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +125,9 @@ const DiscoverySchema = z.object({
   matches: z.array(z.object({ equipmentId: z.string(), reason: z.string().max(300) })).max(5),
 });
 const ExplanationSchema = z.object({ explanation: z.string().min(1).max(800) });
+const PlanSchema = z.object({
+  needs: z.array(z.object({ category: z.string(), hours: z.number().int().min(1).max(6), reason: z.string().max(300) })).max(5),
+});
 const ReviewSchema = z.object({ summary: z.string().min(1).max(400), riskFlags: z.array(z.string().max(200)).max(5) });
 
 const SYSTEM = [
@@ -189,6 +210,16 @@ export class GeminiAssistant implements AiAssistant {
       schema: { type: 'object', properties: { summary: { type: 'string' }, riskFlags: { type: 'array', items: { type: 'string' } } }, required: ['summary', 'riskFlags'] },
     });
     return result ? { ...result, source: 'gemini' } : this.fallback.reviewAccessRequest(input);
+  }
+
+  async planNeeds(input: PlanNeedsInput) {
+    const result = await this.call(`plan:${JSON.stringify(input)}`, PlanSchema, {
+      prompt: `Available equipment categories: ${JSON.stringify(input.categories)}\nProject: ${escapeTags(input.projectTitle)}\n\n<user_input>${escapeTags(input.description)}</user_input>\n\nList the equipment categories (only from the available list) this student project needs, the lab hours for the next session on each (1–6), and a one-sentence reason. At most 5, most important first.`,
+      schema: { type: 'object', properties: { needs: { type: 'array', items: { type: 'object', properties: { category: { type: 'string' }, hours: { type: 'integer' }, reason: { type: 'string' } }, required: ['category', 'hours', 'reason'] } } }, required: ['needs'] },
+    });
+    const known = new Set(input.categories);
+    const needs = result?.needs.filter((n, i, all) => known.has(n.category) && all.findIndex((x) => x.category === n.category) === i);
+    return needs?.length ? { needs, source: 'gemini' as const } : this.fallback.planNeeds(input);
   }
 
   /** Cached, time-boxed, schema-validated call. Returns null on any failure so callers fall back. */

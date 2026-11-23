@@ -28,6 +28,9 @@ const AccessBody = z.object({
 const DecisionBody = z.object({ decision: z.enum(['approved', 'rejected']), note: z.string().trim().max(500).optional() });
 const ResolveBody = z.object({ groupId: z.string().min(1).max(200) });
 const IdParam = z.object({ id });
+const PlanBody = z.object({ projectId: id, notes: z.string().trim().max(500).optional() });
+const FaultBody = z.object({ description: z.string().trim().min(10, 'Describe the fault in at least 10 characters').max(500) });
+const FaultAction = z.object({ action: z.enum(['maintenance', 'resolve']) });
 
 export function apiRouter(lab: LabService, tokens: TokenService): Router {
   const router = Router();
@@ -88,6 +91,20 @@ export function apiRouter(lab: LabService, tokens: TokenService): Router {
     res.json(lab.cancelBooking(session(res).userId, parse(IdParam, req.params).id));
   });
 
+  router.post('/bookings/:id/check-in', auth, requireRole('student'), (req, res) => {
+    res.json(lab.checkIn(session(res).userId, parse(IdParam, req.params).id));
+  });
+
+  router.post('/plan', auth, requireRole('student'), aiLimiter, async (req, res) => {
+    const { projectId, notes } = parse(PlanBody, req.body);
+    res.json(await lab.plan(session(res).userId, projectId, notes));
+  });
+
+  router.post('/equipment/:id/faults', auth, (req, res) => {
+    const { id: equipmentId } = parse(IdParam, req.params);
+    res.status(201).json(lab.reportFault(session(res).userId, equipmentId, parse(FaultBody, req.body).description));
+  });
+
   router.post('/access-requests', auth, requireRole('student'), aiLimiter, async (req, res) => {
     res.status(201).json(await lab.createAccessRequest(session(res).userId, parse(AccessBody, req.body)));
   });
@@ -108,6 +125,14 @@ export function apiRouter(lab: LabService, tokens: TokenService): Router {
 
   router.post('/conflicts/resolve', auth, requireRole('faculty'), aiLimiter, async (req, res) => {
     res.json(await lab.resolveConflict(session(res).userId, parse(ResolveBody, req.body).groupId));
+  });
+
+  router.get('/faults', auth, requireRole('faculty'), (_req, res) => {
+    res.json(lab.openFaults(session(res).userId));
+  });
+
+  router.post('/faults/:id', auth, requireRole('faculty'), (req, res) => {
+    res.json(lab.handleFault(session(res).userId, parse(IdParam, req.params).id, parse(FaultAction, req.body).action));
   });
 
   router.get('/analytics/utilisation', auth, requireRole('faculty'), (_req, res) => {

@@ -4,6 +4,7 @@ import type {
   Booking,
   Department,
   Equipment,
+  FaultReport,
   Project,
   SlotRequest,
   User,
@@ -17,6 +18,7 @@ export interface SeedData {
   bookings: Booking[];
   slotRequests: SlotRequest[];
   accessRequests: AccessRequest[];
+  faultReports: FaultReport[];
 }
 
 type Entity = { id: string };
@@ -81,6 +83,7 @@ export class Store {
   readonly bookings: Collection<Booking>;
   readonly slotRequests: Collection<SlotRequest>;
   readonly accessRequests: Collection<AccessRequest>;
+  readonly faultReports: Collection<FaultReport>;
 
   constructor(seed: SeedData, onChange?: ChangeListener) {
     this.departments = new Collection('departments', seed.departments, onChange);
@@ -90,5 +93,7 @@ export class Store {
     this.bookings = new Collection('bookings', seed.bookings, onChange);
     this.slotRequests = new Collection('slotRequests', seed.slotRequests, onChange);
     this.accessRequests = new Collection('accessRequests', seed.accessRequests, onChange);
+    // Older persisted snapshots may predate fault reports.
+    this.faultReports = new Collection('faultReports', seed.faultReports ?? [], onChange);
   }
 }

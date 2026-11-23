@@ -58,7 +58,8 @@ export interface Interval {
   end: number;
 }
 
-export type BookingStatus = 'confirmed' | 'cancelled';
+/** `no-show`: not checked in within the grace period, so the slot was released to others. */
+export type BookingStatus = 'confirmed' | 'cancelled' | 'no-show';
 
 export interface Booking {
   id: string;
@@ -69,6 +70,7 @@ export interface Booking {
   end: string;
   status: BookingStatus;
   createdAt: string;
+  checkedInAt?: string;
 }
 
 export type SlotRequestStatus = 'pending' | 'allocated' | 'declined';
@@ -129,4 +131,31 @@ export interface AllocationOutcome {
   violations: string[];
   alternatives: Alternative[];
   explanation?: string;
+}
+
+export type FaultStatus = 'open' | 'resolved';
+
+export interface FaultReport {
+  id: string;
+  equipmentId: string;
+  reportedBy: string;
+  description: string;
+  status: FaultStatus;
+  createdAt: string;
+  resolvedBy?: string;
+}
+
+/** One equipment need inferred from a project description. */
+export interface PlanNeed {
+  category: string;
+  hours: number;
+  reason: string;
+}
+
+export interface PlanItem extends PlanNeed {
+  equipmentId?: string;
+  start?: string;
+  end?: string;
+  /** Human-readable reasons this need could not be scheduled automatically. */
+  issues: string[];
 }

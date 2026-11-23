@@ -2,7 +2,7 @@ import type { ChangeListener, CollectionName, SeedData } from './store.js';
 
 type Entity = { id: string };
 
-export const COLLECTIONS: CollectionName[] = ['departments', 'users', 'equipment', 'projects', 'bookings', 'slotRequests', 'accessRequests'];
+export const COLLECTIONS: CollectionName[] = ['departments', 'users', 'equipment', 'projects', 'bookings', 'slotRequests', 'accessRequests', 'faultReports'];
 
 /** Minimal document-database port; Firestore in production, an in-memory fake in tests. */
 export interface DocumentDb {

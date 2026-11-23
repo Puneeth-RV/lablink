@@ -137,6 +137,9 @@ export function createSeed(now: number = Date.now()): SeedData {
     bookings,
     slotRequests,
     accessRequests,
+    faultReports: [
+      { id: 'seed-f1', equipmentId: 'ece-osc-2', reportedBy: 'stu-asha', description: 'Channel 3 probe shows a flat line even with a known 1 kHz test signal.', status: 'open', createdAt: ago(4) },
+    ],
   };
 }
 

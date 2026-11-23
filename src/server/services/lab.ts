@@ -1,7 +1,9 @@
 import { allocate, conflictGroups, findAlternatives, isSlotFree, type AllocationContext } from '../domain/allocation.js';
+import { canCheckIn, findNoShows } from '../domain/checkin.js';
+import { planSchedule } from '../domain/planner.js';
 import { checkFeasibility, describeViolations, recentUsageHours, WEEKLY_HOUR_CAP } from '../domain/policy.js';
 import { DAY_MS, HOUR_MS, LAB_CLOSE_HOUR, LAB_OPEN_HOUR, overlaps, toInterval, toIso } from '../domain/time.js';
-import type { AccessRequest, Booking, Equipment, Project, SlotRequest, User } from '../domain/types.js';
+import type { AccessRequest, Booking, Equipment, FaultReport, Project, SlotRequest, User } from '../domain/types.js';
 import { utilisationReport } from '../domain/utilisation.js';
 import { HttpError, notFound } from '../middleware/http.js';
 import type { AiAssistant } from './ai.js';
@@ -100,8 +102,16 @@ export class LabService {
     return this.equipment(id);
   }
 
+  /** Lazily releases slots whose holder missed check-in; returns how many were released. */
+  releaseNoShows(): number {
+    const released = findNoShows(this.store.bookings.list(), this.clock());
+    for (const b of released) this.store.bookings.update(b.id, { status: 'no-show' });
+    return released.length;
+  }
+
   /** Hourly status of one campus day for an item. */
   availability(equipmentId: string, date: string) {
+    this.releaseNoShows();
     const equipment = this.equipment(equipmentId);
     const dayStart = Date.parse(`${date}${IST_SUFFIX}`);
     if (Number.isNaN(dayStart)) throw new HttpError(400, 'VALIDATION_ERROR', 'Invalid date');
@@ -140,6 +150,7 @@ export class LabService {
    * Infeasible or clashing requests are rejected with actionable alternatives.
    */
   createBooking(userId: string, input: BookingInput): { kind: 'booked'; booking: Booking } | { kind: 'queued'; request: SlotRequest } {
+    this.releaseNoShows();
     const now = this.clock();
     const user = this.user(userId);
     const equipment = this.equipment(input.equipmentId);
@@ -185,7 +196,17 @@ export class LabService {
     return this.store.bookings.update(bookingId, { status: 'cancelled' });
   }
 
+  checkIn(userId: string, bookingId: string): Booking {
+    const booking = this.store.bookings.get(bookingId);
+    if (!booking || booking.userId !== userId) throw notFound('Booking');
+    if (!canCheckIn(booking, this.clock())) {
+      throw new HttpError(409, 'CHECK_IN_CLOSED', 'Check-in opens 10 minutes before the slot and closes 15 minutes after it starts');
+    }
+    return this.store.bookings.update(bookingId, { checkedInAt: toIso(this.clock()) });
+  }
+
   activity(userId: string) {
+    this.releaseNoShows();
     const name = (id: string) => this.store.equipment.get(id)?.name ?? id;
     const title = (id: string) => this.store.projects.get(id)?.title ?? id;
     const byStart = <T extends { start: string }>(a: T, b: T) => a.start.localeCompare(b.start);
@@ -193,7 +214,14 @@ export class LabService {
       bookings: this.store.bookings
         .list((b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > this.clock() - DAY_MS)
         .sort(byStart)
-        .map((b) => ({ ...b, equipmentName: name(b.equipmentId), projectTitle: title(b.projectId), label: this.label(b), upcoming: Date.parse(b.start) > this.clock() })),
+        .map((b) => ({
+          ...b,
+          equipmentName: name(b.equipmentId),
+          projectTitle: title(b.projectId),
+          label: this.label(b),
+          upcoming: Date.parse(b.start) > this.clock(),
+          canCheckIn: canCheckIn(b, this.clock()),
+        })),
       slotRequests: this.store.slotRequests
         .list((r) => r.userId === userId)
         .sort(byStart)
@@ -349,6 +377,66 @@ export class LabService {
       });
     }
     return { ...group, ...described, explanation: explanation.text, explanationSource: explanation.source };
+  }
+
+  // ---- AI project planner ----------------------------------------------------------
+
+  /** Gemini infers equipment needs from the project; the planner finds feasible slots for each. */
+  async plan(userId: string, projectId: string, notes?: string) {
+    const user = this.user(userId);
+    const project = this.project(projectId);
+    if (project.ownerId !== userId) throw new HttpError(403, 'FORBIDDEN', 'You can only plan your own project');
+    const equipment = this.store.equipment.list((e) => e.status === 'available');
+    const { needs, source } = await this.ai.planNeeds({
+      projectTitle: project.title,
+      description: [project.description, notes].filter(Boolean).join('\n'),
+      categories: [...new Set(equipment.map((e) => e.category))],
+      essentialCategories: project.essentialCategories,
+    });
+    const items = planSchedule(needs, {
+      now: this.clock(),
+      user,
+      project,
+      equipment,
+      bookings: this.store.bookings.list(),
+      accessRequests: this.store.accessRequests.list((a) => a.userId === userId),
+    });
+    return {
+      source,
+      project: { id: project.id, title: project.title, deadline: project.deadline },
+      items: items.map((i) => {
+        const e = i.equipmentId ? this.equipment(i.equipmentId) : undefined;
+        return { ...i, equipmentName: e?.name, highDemand: e?.highDemand ?? false, label: i.start && i.end ? this.label({ start: i.start, end: i.end }) : undefined };
+      }),
+    };
+  }
+
+  // ---- fault reports -----------------------------------------------------------------
+
+  reportFault(userId: string, equipmentId: string, description: string): FaultReport {
+    this.equipment(equipmentId);
+    const duplicate = this.store.faultReports.list((f) => f.equipmentId === equipmentId && f.reportedBy === userId && f.status === 'open');
+    if (duplicate.length) throw new HttpError(409, 'DUPLICATE_REPORT', 'You already reported a fault on this equipment');
+    return this.store.faultReports.insert({ equipmentId, reportedBy: userId, description, status: 'open', createdAt: toIso(this.clock()) });
+  }
+
+  openFaults(facultyId: string) {
+    return this.store.faultReports
+      .list((f) => f.status === 'open' && this.inScope(facultyId, f.equipmentId))
+      .map((f) => ({ ...f, equipmentName: this.equipment(f.equipmentId).name, equipmentStatus: this.equipment(f.equipmentId).status, reporterName: this.user(f.reportedBy).name }));
+  }
+
+  /** Faculty either take the item offline for maintenance, or resolve the fault and bring it back online. */
+  handleFault(facultyId: string, faultId: string, action: 'maintenance' | 'resolve') {
+    const fault = this.store.faultReports.get(faultId);
+    if (!fault || !this.inScope(facultyId, fault.equipmentId)) throw notFound('Fault report');
+    if (fault.status !== 'open') throw new HttpError(409, 'ALREADY_RESOLVED', 'Fault was already resolved');
+    if (action === 'maintenance') {
+      this.store.equipment.update(fault.equipmentId, { status: 'maintenance' });
+      return fault;
+    }
+    this.store.equipment.update(fault.equipmentId, { status: 'available' });
+    return this.store.faultReports.update(faultId, { status: 'resolved', resolvedBy: facultyId });
   }
 
   // ---- analytics -----------------------------------------------------------------
