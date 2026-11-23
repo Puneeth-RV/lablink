@@ -83,14 +83,14 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
   - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
   - **Bounded memory**: only active bookings and requests from the last 30 days are loaded into the working set (full history stays in Firestore). The AI cache is size- and time-bounded, and missing AI reviews are generated in parallel.
   - The Cloud Run service scales to zero.
-- **Testing**: 86 Vitest tests:
+- **Testing**: 93 Vitest tests (about 90% line coverage, `npm run test:coverage`):
   - Domain unit tests: time, policy, scoring, deterministic allocation, alternatives, conflict grouping, utilisation.
   - API integration tests with supertest: auth, RBAC, validation, 409/422 flows, the approval workflow, conflict resolution, analytics.
   - AI service tests with a mocked model: caching, timeout, invalid JSON and API-error fallbacks, prompt delimiting, hallucination filtering.
   - Persistence tests with a fake document database: data survives a restart, stale data is reseeded, failed writes are logged without breaking requests, and snapshots are written in order.
   - Config validation tests.
   - Feature tests for the planner (earliest feasible slot, no double-booking, training and cap issues), check-in windows and no-show release, fault reporting with department scoping, and calendar export.
-  - Client tests with Testing Library, including **automated axe-core accessibility checks** and keyboard interaction.
+  - Client tests with Testing Library covering every page (discovery, equipment booking, planner, my bookings, approvals, conflicts, faults, insights). Each page runs an **automated axe-core accessibility check** and is exercised through keyboard and pointer interactions.
 - **Accessibility**:
   - Semantic landmarks and a skip link; focus moves to the page heading on navigation.
   - Every input is labelled, and errors are linked with `aria-describedby`.

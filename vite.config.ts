@@ -11,6 +11,7 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.{ts,tsx}'],
     setupFiles: ['tests/setup.ts'],
-    coverage: { include: ['src/**'], reporter: ['text-summary'] },
+    // Entry points only wire dependencies together; their logic is covered via createApp/App tests.
+    coverage: { include: ['src/**'], exclude: ['src/server/index.ts', 'src/client/main.tsx', 'src/**/*.d.ts'], reporter: ['text-summary'] },
   },
 });
