@@ -28,7 +28,7 @@ Google technologies (Firebase, Google Cloud, Gemini, Google AI Studio) are encou
 
 ## Environment (already set up)
 - CLIs installed and logged in: `gh`, `gcloud`, `firebase` (account matches AI Studio).
-- Firebase/GCP project: `prompt-wars-5e5cd` (`gcloud` default and `.firebaserc` set). Billing is NOT enabled (checked) — required for Cloud Run.
+- Firebase/GCP project: `prompt-wars-5e5cd` (`gcloud` default and `.firebaserc` set). Billing enabled (free trial credit). APIs enabled: Cloud Run, Cloud Build, Artifact Registry, Secret Manager.
 - `.env` contains `GEMINI_API_KEY`. Never print, log, or commit it; `.gitignore` covers `.env*`.
 - Claude in Chrome is connected (screenshots are token-heavy; prefer CLI checks where possible).
 
