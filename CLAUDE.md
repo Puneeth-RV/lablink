@@ -4,6 +4,7 @@
 Official context lives in `Competation context/` — read these instead of relying on this summary:
 - `Competation context/Evaluation_criteria&guidelines.txt`
 - `Competation context/Schedule.txt`
+- `Competation context/Submission_instructions`
 - Problem statement: pasted in chat after release (save it to `Competation context/Problem_statement.txt`).
 
 All design decisions (features, stack, scope, timeline) are made only after the problem statement is read. Do not assume them beforehand.
@@ -39,3 +40,11 @@ Google technologies (Firebase, Google Cloud, Gemini, Google AI Studio) are encou
 - Message prefixes: `feat:`, `fix:`, `test:`, `docs:`, `a11y:`, `refactor:`, `chore:`.
 - No Co-Authored-By or AI attribution lines in commits.
 - Never commit secrets — check `git status` before committing; `.env*` stays ignored.
+
+## Submission rules (from `Submission_instructions` — violating these may mean no evaluation)
+- Maximum 2 submission attempts.
+- Repo must be **public**, **< 10 MB**, and have **only one branch** (`main`). Never commit `node_modules`, build output, or large assets.
+- Expected: "a smart, dynamic assistant" with "logical decision making based on user context", "practical and real-world usability", "clean and maintainable code".
+- Must choose one of the provided challenge verticals and design around that persona and logic.
+- README must explain: chosen vertical, approach and logic, how the solution works, assumptions made.
+- Scoring is tiered High / Medium / Low impact (which criteria fall in which tier is not specified).

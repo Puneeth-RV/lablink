@@ -2,3 +2,9 @@
 .env.*
 !.env.example
 node_modules/
+dist/
+build/
+coverage/
+.firebase/
+*.log
+.DS_Store
