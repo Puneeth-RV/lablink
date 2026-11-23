@@ -268,3 +268,41 @@ select {
 }
 .persona-switcher select { padding-right: 2.25rem; background-position: right 0.7rem center; }
 select:disabled { cursor: not-allowed; opacity: 0.6; }
+
+/* ---------- Status colour system ---------- */
+/* Colour is always paired with text (badges, labels), never the only signal. */
+.tone-ok, .tone-ok-soft, .tone-warn, .tone-danger, .tone-info { border-left-width: 4px !important; border-left-style: solid; }
+.tone-ok { border-left-color: var(--ok); }
+.tone-ok-soft { border-left-color: var(--ok); }
+.tone-warn { border-left-color: #d97706; }
+.tone-danger { border-left-color: var(--danger); }
+.tone-info { border-left-color: var(--primary); }
+
+.badge::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 0.35rem; opacity: 0.85; }
+.badge-ok, .badge-warn, .badge-info, .badge-danger { font-weight: 650; }
+
+.stat-grid { list-style: none; padding: 0; margin: 0 0 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat.tone-ok .stat-value { color: var(--ok); }
+.stat.tone-warn .stat-value { color: var(--warn); }
+.stat.tone-info .stat-value { color: var(--primary); }
+.stat.tone-danger .stat-value { color: var(--danger); }
+.stat-label { font-size: 0.85rem; color: var(--muted); font-weight: 550; }
+
+.nav-count { display: inline-grid; place-items: center; min-width: 1.25rem; height: 1.25rem; padding: 0 0.35rem; margin-left: 0.4rem; border-radius: 999px; background: var(--danger); color: #fff; font-size: 0.72rem; font-weight: 700; vertical-align: 1px; }
+[data-theme='dark'] .nav-count { color: #0d1117; }
+
+.rank-win { background: var(--ok-soft); border-radius: var(--radius-sm); padding-left: 0.75rem !important; padding-right: 0.75rem; }
+.rank-lose { padding-left: 0.75rem !important; }
+
+/* Light tint behind page content so white cards stand out. */
+[data-theme='light'] main .card { border-top-color: #dde2ea; border-right-color: #dde2ea; border-bottom-color: #dde2ea; }
+[data-theme='light'] .app-header { box-shadow: 0 1px 0 #e5e7eb; }
+
+.stat.tone-ok { background: var(--ok-soft); }
+.stat.tone-warn { background: var(--warn-soft); }
+.stat.tone-info { background: var(--info-soft); }
+.stat.tone-danger { background: var(--danger-soft); }
+.card.tone-warn:not(.equipment-card), .card.tone-danger:not(.equipment-card) { background: linear-gradient(90deg, var(--warn-soft), var(--surface) 35%); }
+.card.tone-danger:not(.equipment-card) { background: linear-gradient(90deg, var(--danger-soft), var(--surface) 35%); }

@@ -30,7 +30,7 @@ export default function ApprovalsPage() {
       {pending.data?.length === 0 && <p className="muted">No pending requests.</p>}
       <ul className="list">
         {pending.data?.map((a) => (
-          <li key={a.id} className="card">
+          <li key={a.id} className={`card ${a.aiReview?.riskFlags.length ? 'tone-warn' : 'tone-info'}`}>
             <h2 className="h3">
               {a.studentName} → {a.equipmentName}
             </h2>

@@ -78,6 +78,10 @@ export function apiRouter(lab: LabService, tokens: TokenService): Router {
   });
 
   // ---- student flows ------------------------------------------------------------
+  router.get('/summary', auth, (_req, res) => {
+    res.json(lab.summary(session(res).userId));
+  });
+
   router.get('/activity', auth, (_req, res) => {
     res.json(lab.activity(session(res).userId));
   });

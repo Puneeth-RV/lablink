@@ -439,6 +439,27 @@ export class LabService {
     return this.store.faultReports.update(faultId, { status: 'resolved', resolvedBy: facultyId });
   }
 
+  // ---- at-a-glance counts ------------------------------------------------------------
+
+  /** Counts shown as navigation badges so users see what needs attention. */
+  summary(userId: string) {
+    const user = this.user(userId);
+    if (user.role === 'faculty') {
+      return {
+        approvals: this.store.accessRequests.list((a) => a.status === 'pending' && this.inScope(userId, a.equipmentId)).length,
+        conflicts: this.conflicts(userId).filter((g) => g.requestIds.length > 1).length,
+        faults: this.store.faultReports.list((f) => f.status === 'open' && this.inScope(userId, f.equipmentId)).length,
+      };
+    }
+    this.releaseNoShows();
+    const now = this.clock();
+    return {
+      upcoming: this.store.bookings.list((b) => b.userId === userId && b.status === 'confirmed' && Date.parse(b.end) > now).length,
+      queued: this.store.slotRequests.list((r) => r.userId === userId && r.status === 'pending').length,
+      awaitingApproval: this.store.accessRequests.list((a) => a.userId === userId && a.status === 'pending').length,
+    };
+  }
+
   // ---- analytics -----------------------------------------------------------------
 
   utilisation() {

@@ -230,6 +230,15 @@ describe('conflict resolution', () => {
   });
 });
 
+describe('summary counts', () => {
+  it('returns role-specific counts for navigation badges', async () => {
+    const student = await request(app).get('/api/summary').set('Authorization', `Bearer ${await login('stu-asha')}`).expect(200);
+    expect(student.body).toEqual({ upcoming: 0, queued: 1, awaitingApproval: 1 });
+    const faculty = await request(app).get('/api/summary').set('Authorization', `Bearer ${await login('fac-iyer')}`).expect(200);
+    expect(faculty.body).toMatchObject({ approvals: 1, conflicts: 1, faults: 1 });
+  });
+});
+
 describe('analytics', () => {
   it('reports utilisation with rebalancing suggestions', async () => {
     const faculty = await login('fac-khan');

@@ -25,6 +25,16 @@ export type Route =
   | { name: 'faults' }
   | { name: 'planner' };
 
+type Summary = Partial<Record<'upcoming' | 'queued' | 'awaitingApproval' | 'approvals' | 'conflicts' | 'faults', number>>;
+
+/** Which summary counts appear as a badge on each nav item. */
+const NAV_COUNTS: Partial<Record<Route['name'], (s: Summary) => number>> = {
+  activity: (s) => (s.queued ?? 0) + (s.awaitingApproval ?? 0),
+  approvals: (s) => s.approvals ?? 0,
+  conflicts: (s) => s.conflicts ?? 0,
+  faults: (s) => s.faults ?? 0,
+};
+
 const STUDENT_NAV: { route: Route['name']; label: string }[] = [
   { route: 'discover', label: 'Find equipment' },
   { route: 'planner', label: 'Plan my project' },
@@ -48,6 +58,8 @@ export function App() {
   const [switching, setSwitching] = useState(false);
   const [route, setRoute] = useState<Route>({ name: 'discover' });
   const users = useResource<DemoUser[]>('/auth/demo-users');
+  // Re-fetched on every navigation (and persona switch) so badges stay current.
+  const summary = useResource<Summary>(profile ? `/summary?u=${profile.user.id}&r=${route.name}` : null);
   const mainRef = useRef<HTMLElement>(null);
 
   const signInAs = useCallback(async (userId: string): Promise<Profile | null> => {
@@ -138,6 +150,17 @@ export function App() {
                   onClick={() => navigate({ name: n.route } as Route)}
                 >
                   {n.label}
+                  {(() => {
+                    const count = summary.data ? NAV_COUNTS[n.route]?.(summary.data) ?? 0 : 0;
+                    return count > 0 ? (
+                      <>
+                        <span className="nav-count" aria-hidden="true">
+                          {count}
+                        </span>
+                        <span className="visually-hidden">, {count} need attention</span>
+                      </>
+                    ) : null;
+                  })()}
                 </button>
               </li>
             ))}

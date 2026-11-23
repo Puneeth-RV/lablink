@@ -5,6 +5,7 @@ import { useResource } from '../lib/hooks';
 import { downloadIcs } from '../lib/ics';
 
 const TONE = { pending: 'warn', allocated: 'ok', approved: 'ok', declined: 'danger', rejected: 'danger' } as const;
+const LABEL = { pending: 'In queue', allocated: 'Allocated', approved: 'Approved', declined: 'Declined', rejected: 'Rejected' } as const;
 
 export function ActivityPage({ onChanged }: { onChanged: () => void }) {
   const activity = useResource<Activity>('/activity');
@@ -40,6 +41,24 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
       {activity.error && <Status kind="error">{activity.error}</Status>}
       {activity.data && (
         <>
+          <ul className="stat-grid" aria-label="Summary">
+            <li className="stat tone-ok">
+              <span className="stat-value">{activity.data.bookings.filter((b) => b.upcoming || b.canCheckIn).length}</span>
+              <span className="stat-label">Confirmed upcoming</span>
+            </li>
+            <li className="stat tone-warn">
+              <span className="stat-value">{activity.data.slotRequests.filter((r) => r.status === 'pending').length}</span>
+              <span className="stat-label">In fair queue</span>
+            </li>
+            <li className="stat tone-info">
+              <span className="stat-value">{activity.data.accessRequests.filter((a) => a.status === 'pending').length}</span>
+              <span className="stat-label">Awaiting approval</span>
+            </li>
+            <li className="stat tone-danger">
+              <span className="stat-value">{activity.data.slotRequests.filter((r) => r.status === 'declined').length}</span>
+              <span className="stat-label">Declined — see alternatives</span>
+            </li>
+          </ul>
           <section aria-labelledby="bookings-heading">
             <h2 id="bookings-heading">Confirmed bookings</h2>
             {activity.data.bookings.length === 0 ? (
@@ -47,7 +66,7 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <ul className="list">
                 {activity.data.bookings.map((b) => (
-                  <li key={b.id} className="card row-between">
+                  <li key={b.id} className={`card row-between ${b.checkedInAt ? 'tone-ok' : 'tone-ok-soft'}`}>
                     <span>
                       <strong>{b.equipmentName}</strong> · {b.label}
                       <br />
@@ -89,9 +108,9 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <ul className="list">
                 {activity.data.slotRequests.map((r) => (
-                  <li key={r.id} className="card">
+                  <li key={r.id} className={`card tone-${TONE[r.status]}`}>
                     <p>
-                      <strong>{r.equipmentName}</strong> · {r.label} <Badge tone={TONE[r.status]}>{r.status}</Badge>
+                      <strong>{r.equipmentName}</strong> · {r.label} <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>
                     </p>
                     <p className="muted small">{r.projectTitle}</p>
                     {r.outcome?.explanation && <p className="explanation">{r.outcome.explanation}</p>}
@@ -110,9 +129,9 @@ export function ActivityPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <ul className="list">
                 {activity.data.accessRequests.map((a) => (
-                  <li key={a.id} className="card">
+                  <li key={a.id} className={`card tone-${a.status === 'pending' ? 'info' : TONE[a.status]}`}>
                     <p>
-                      <strong>{a.equipmentName}</strong> for {a.projectTitle} <Badge tone={TONE[a.status]}>{a.status}</Badge>
+                      <strong>{a.equipmentName}</strong> for {a.projectTitle} <Badge tone={a.status === 'pending' ? 'info' : TONE[a.status]}>{a.status === 'pending' ? 'Awaiting approval' : LABEL[a.status]}</Badge>
                     </p>
                     {a.decisionNote && <p className="muted">Faculty note: {a.decisionNote}</p>}
                     {a.aiReview && (

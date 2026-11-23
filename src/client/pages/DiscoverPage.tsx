@@ -7,7 +7,7 @@ import { useDebounced, useResource } from '../lib/hooks';
 function EquipmentBadges({ e }: { e: Equipment }) {
   return (
     <span className="badges">
-      {e.status === 'maintenance' && <Badge tone="danger">Under maintenance</Badge>}
+      {e.status === 'maintenance' ? <Badge tone="danger">Under maintenance</Badge> : !e.highDemand && !e.requiresApproval && <Badge tone="ok">Instant booking</Badge>}
       {e.highDemand && <Badge tone="warn">High demand · fair queue</Badge>}
       {e.requiresApproval && <Badge tone="info">Faculty approval</Badge>}
       {e.requiredTraining && <Badge>Training: {titleCase(e.requiredTraining)}</Badge>}
@@ -141,7 +141,7 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
             </p>
             <ul className="grid">
               {list.data.map((e) => (
-                <li key={e.id} className="card equipment-card">
+                <li key={e.id} className={`card equipment-card tone-${e.status === 'maintenance' ? 'danger' : e.highDemand ? 'warn' : e.requiresApproval ? 'info' : 'ok'}`}>
                   <h3>{e.name}</h3>
                   <p className="muted small">
                     {deptName(e.departmentId)} · {e.location}
