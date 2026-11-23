@@ -136,7 +136,7 @@ export function App() {
       </a>
       <header className="app-header">
         <div className="brand">
-          <img src="/logo.png" alt="" width="32" height="32" />
+          <img src="/favicon.png" alt="" width="32" height="32" />
           <span>LabLink</span>
         </div>
         <nav aria-label="Main">
@@ -176,7 +176,13 @@ export function App() {
               </span>
             </span>
           )}
-          {users.data && <PersonaSwitcher users={users.data} currentId={profile.user.id} busy={switching} onSwitch={(id) => void switchPersona(id)} />}
+          {/* Rendered immediately with the current user so the header never changes height (no layout shift). */}
+          <PersonaSwitcher
+            users={users.data ?? [{ id: profile.user.id, name: profile.user.name, role: profile.user.role, departmentId: profile.user.departmentId }]}
+            currentId={profile.user.id}
+            busy={switching || !users.data}
+            onSwitch={(id) => void switchPersona(id)}
+          />
           <ThemeToggle />
         </div>
       </header>
