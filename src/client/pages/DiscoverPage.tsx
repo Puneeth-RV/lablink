@@ -148,7 +148,7 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
                   </p>
                   <p>{e.description}</p>
                   <EquipmentBadges e={e} />
-                  <button type="button" className="btn" onClick={() => onOpen(e.id)} aria-label={`View availability and book ${e.name}`}>
+                  <button type="button" className="btn" onClick={() => onOpen(e.id)} aria-label={`View & book ${e.name}`}>
                     View &amp; book
                   </button>
                 </li>

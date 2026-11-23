@@ -61,7 +61,7 @@ export function createApp({ store, ai, sessionSecret, clock = Date.now, staticDi
   if (staticDir && existsSync(staticDir)) {
     // Hashed assets are immutable; index.html must always revalidate.
     app.use('/assets', express.static(path.join(staticDir, 'assets'), { immutable: true, maxAge: '1y', index: false }));
-    app.use(express.static(staticDir, { index: false, maxAge: '1h' }));
+    app.use(express.static(staticDir, { index: false, maxAge: '7d' }));
     app.get(/^\/(?!api\/).*/, (_req, res) => {
       res.set('Cache-Control', 'no-cache');
       res.sendFile(path.join(staticDir, 'index.html'));
