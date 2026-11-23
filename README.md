@@ -4,6 +4,12 @@
 
 LabLink is a GenAI-powered campus laboratory resource-sharing platform. Students discover specialised equipment across departments, book slots, request project-based access and get faculty approvals. When several students want the same high-demand equipment at the same time, LabLink **resolves the conflict fairly and transparently** using project deadlines, recent usage, requirement fit and waiting time — and offers everyone else feasible alternatives.
 
+## Problem statement
+
+> **LabLink — Making College Laboratories More Accessible**
+>
+> Create a GenAI-powered campus laboratory resource-sharing platform that helps students discover and access specialised equipment, development kits, and laboratory workstations across departments. The platform should enable equipment discovery, intelligent slot booking, project-based access requests, and faculty approvals while optimising resource utilisation. It should intelligently resolve scheduling conflicts by recommending fair and feasible equipment allocations based on project deadlines, availability, and student requirements.
+
 ## Chosen vertical
 
 **Campus laboratory resource sharing** (problem statement: *LabLink — Making College Laboratories More Accessible*). Personas: **students** who need equipment for projects, and **faculty** who approve access and oversee their department's equipment.

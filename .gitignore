@@ -8,4 +8,7 @@ coverage/
 .firebase/
 *.log
 .DS_Store
-Competation context/*.pdf
+
+# Local hackathon notes (not part of the product)
+Competation context/
+CLAUDE.md
