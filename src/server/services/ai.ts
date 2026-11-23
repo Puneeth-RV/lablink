@@ -218,7 +218,7 @@ export class GeminiAssistant implements AiAssistant {
 export function geminiTransport(apiKey: string, model: string): GenerateJson {
   let client: Promise<import('@google/genai').GoogleGenAI> | undefined;
   return async ({ system, prompt, schema, signal }) => {
-    client ??= import('@google/genai').then(({ GoogleGenAI }) => new GoogleGenAI({ apiKey }));
+    client ??= import('@google/genai').then(({ GoogleGenAI }) => new GoogleGenAI({ apiKey, apiVersion: 'v1beta' }));
     const ai = await client;
     const res = await ai.models.generateContent({
       model,

@@ -5,7 +5,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(8080),
   GEMINI_API_KEY: z.string().min(1).optional(),
-  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
+  GEMINI_MODEL: z.string().min(1).default('gemini-flash-lite-latest'),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
   SESSION_SECRET: z.string().min(32).optional(),
 });
