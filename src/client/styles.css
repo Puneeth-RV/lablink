@@ -308,3 +308,15 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .equipment-icon.large { width: 88px; height: 88px; }
 .equipment-head h3 { margin: 0 0 0.15rem; }
 .equipment-head p { margin: 0; }
+
+/* ---------- Equipment photos ---------- */
+.equipment-media { margin: -1rem -1.25rem 0.6rem; aspect-ratio: 16 / 10; overflow: hidden; border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; background: var(--surface-2); }
+.equipment-media.placeholder { display: grid; place-items: center; color: var(--muted); }
+.equipment-media.placeholder .equipment-icon { width: auto; height: auto; border: 0; background: none; color: var(--muted); }
+.equipment-photo { width: 100%; height: 100%; object-fit: cover; }
+.equipment-hero { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 1.5rem; align-items: start; margin-bottom: 1rem; }
+.equipment-media.detail { margin: 0; border: 1px solid var(--border); border-radius: var(--radius); aspect-ratio: auto; }
+.equipment-media.detail .equipment-photo { aspect-ratio: 16 / 10; }
+.equipment-media.detail.placeholder { aspect-ratio: 16 / 10; }
+.equipment-media figcaption { padding: 0.4rem 0.6rem; font-size: 0.75rem; border-top: 1px solid var(--border); }
+@media (max-width: 720px) { .equipment-hero { grid-template-columns: 1fr; } }

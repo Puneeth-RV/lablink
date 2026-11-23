@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { EquipmentIcon } from '../components/EquipmentIcon';
+import { EquipmentMedia } from '../components/EquipmentMedia';
 import { Alternatives, Badge, Loading, Status, ViolationList } from '../components/ui';
 import { api, ApiError, type AccessRequest, type Activity, type BookingResult, type Equipment, type NamedAlternative, type Profile, type Slot } from '../lib/api';
 import { campusDate, campusIso, campusParts, formatDate, formatSlot, formatTime, titleCase } from '../lib/format';
@@ -110,21 +110,21 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
       <button type="button" className="link back" onClick={onBack}>
         ← Back to equipment
       </button>
-      <div className="equipment-head">
-        <EquipmentIcon category={e.category} size={40} large />
+      <div className="equipment-hero">
+        <EquipmentMedia id={e.id} name={e.name} category={e.category} detail />
         <div>
           <h1 tabIndex={-1}>{e.name}</h1>
           <p className="muted">
             {e.location} · {titleCase(e.category)} · max {e.maxSlotHours} h per slot
           </p>
+          <p>{e.description}</p>
+          <p className="badges">
+            {e.capabilities.map((c) => (
+              <Badge key={c}>{c}</Badge>
+            ))}
+          </p>
         </div>
       </div>
-      <p>{e.description}</p>
-      <p className="badges">
-        {e.capabilities.map((c) => (
-          <Badge key={c}>{c}</Badge>
-        ))}
-      </p>
       {e.status === 'maintenance' && <Status kind="error">This equipment is under maintenance and cannot be booked.</Status>}
       {e.requiredTraining && (
         <p>

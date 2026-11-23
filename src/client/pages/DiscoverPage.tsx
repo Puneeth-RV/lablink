@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { EquipmentIcon } from '../components/EquipmentIcon';
+import { EquipmentMedia } from '../components/EquipmentMedia';
 import { Badge, Loading, SourceBadge, Status } from '../components/ui';
 import { api, type DiscoverResponse, type Equipment, type Meta } from '../lib/api';
 import { titleCase } from '../lib/format';
@@ -143,15 +143,11 @@ export function DiscoverPage({ onOpen }: { onOpen: (id: string) => void }) {
             <ul className="grid">
               {list.data.map((e) => (
                 <li key={e.id} className="card equipment-card">
-                  <div className="equipment-head">
-                    <EquipmentIcon category={e.category} />
-                    <div>
-                      <h3>{e.name}</h3>
-                      <p className="muted small">
-                        {deptName(e.departmentId)} · {e.location}
-                      </p>
-                    </div>
-                  </div>
+                  <EquipmentMedia id={e.id} name={e.name} category={e.category} />
+                  <h3>{e.name}</h3>
+                  <p className="muted small">
+                    {deptName(e.departmentId)} · {e.location}
+                  </p>
                   <p>{e.description}</p>
                   <EquipmentBadges e={e} />
                   <button type="button" className="btn" onClick={() => onOpen(e.id)} aria-label={`View & book ${e.name}`}>
