@@ -53,6 +53,15 @@ The core design principle is that **decisions are deterministic, tested and audi
 
 Every call uses a JSON schema for structured output, is validated with zod, filtered to known equipment IDs (no hallucinated items), wrapped in an 8 s timeout, cached for 10 min, and falls back to a deterministic rule-based assistant. Untrusted user text is placed inside `<user_input>` delimiters, and the system instruction tells the model never to follow instructions found there.
 
+## How LabLink meets the challenge expectations
+
+| Expectation | Evidence in LabLink |
+|---|---|
+| **A smart, dynamic assistant** | Students describe needs in plain English and LabLink recommends equipment (`POST /api/discover`). They describe a whole project in free text ("due next Friday") and it extracts the title, deadline and equipment needs (`POST /api/projects`), then builds a bookable schedule (`POST /api/plan`). Faculty get an automatic pre-review of each access request and a plain-language explanation of every allocation. Everything is **dynamic**: live availability, the fair queue, no-show release and fault status change what the assistant recommends. |
+| **Logical decision making based on user context** | Every decision uses the requesting user's context: **role** (student or faculty), **department** (faculty only see and act on their own department's equipment), **safety trainings**, **approved access** per project, **project deadline**, **hours already used this week** (fair-use cap) and **time waiting**. These feed deterministic rules (`domain/policy.ts`) and the explainable priority score (`domain/allocation.ts`). The same request from two students can correctly get different outcomes, and the reason is always shown. |
+| **Practical, real-world usability** | Clashes and infeasible requests never dead-end; they return concrete alternatives. Bookings export to any calendar with a reminder. Check-in frees up no-shows. Students can report faults, and faculty can take equipment offline. Navigation badges show what needs attention. It works on mobile, by keyboard and with screen readers, in light and dark themes, with real equipment photos. |
+| **Clean, maintainable code** | Pure domain layer with no I/O, a thin HTTP layer, and dependency injection (`createApp(deps)`). Strict TypeScript shares types between client and server. ESLint (including jsx-a11y strict) and CI run lint, typecheck, tests, build and audit on every push. 93 tests cover about 90% of lines. |
+
 ## Architecture
 
 ```
@@ -82,8 +91,8 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
   - Prompt-injection hardening and secrets held in Secret Manager.
   - Non-root container; `npm audit` reports 0 vulnerabilities.
 - **Efficiency**:
-  - 6 runtime dependencies; the Gemini SDK is lazily imported.
-  - The client is about 76 kB gzipped, and faculty-only pages are code-split.
+  - 7 runtime dependencies; the Gemini and Firestore SDKs are lazily imported, so startup stays fast.
+  - The client is about 80 kB gzipped, and faculty-only pages are code-split.
   - Hashed assets are served with `immutable` 1-year caching; responses are gzip-compressed.
   - AI responses are cached with a TTL; catalogue search is debounced.
   - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
@@ -115,7 +124,7 @@ React + Vite SPA  ──►  Express 5 API (single Cloud Run service)
 
 ## Images
 
-29 equipment photos come from Wikimedia Commons under free licences (CC0, CC BY or CC BY-SA). Each was resized to about 40 KB and is served from the app itself, so no third-party requests are made. Authors and licences are listed in [`CREDITS.md`](CREDITS.md) and shown under each photo. Items without a suitable photo use original line-art illustrations.
+29 equipment photos come from Wikimedia Commons under free licences (CC0, CC BY or CC BY-SA). Each was resized to about 40 KB and is served from the app itself, so no third-party requests are made. Authors and licences are listed in [`CREDITS.md`](CREDITS.md) and shown under each photo. If an item has no photo (for example, newly added equipment), the app falls back to an original line-art illustration for its category.
 
 ## Run locally
 
