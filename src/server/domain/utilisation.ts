@@ -42,7 +42,8 @@ export function utilisationReport(
 
   const items: EquipmentUtilisation[] = equipment.map((e) => {
     const intervals = confirmed.filter((b) => b.equipmentId === e.id).map(toInterval);
-    const bookedHours = hoursWithin(intervals, window);
+    // The 7-day window rarely starts on the hour, so round to one decimal for display.
+    const bookedHours = Math.round(hoursWithin(intervals, window) * 10) / 10;
     const capacityHours = e.status === 'available' ? days * dailyCapacity : 0;
     return {
       equipmentId: e.id,

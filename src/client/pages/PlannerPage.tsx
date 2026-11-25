@@ -1,3 +1,4 @@
+import { TableScroll } from '../components/TableScroll';
 import { useState, type FormEvent } from 'react';
 import { Badge, SourceBadge, Status } from '../components/ui';
 import { api, ApiError, type BookingResult, type PlanResponse, type Profile, type Project } from '../lib/api';
@@ -188,43 +189,45 @@ export default function PlannerPage({ profile, onBooked }: { profile: Profile; o
             <h2 id="plan-heading">
               Proposed plan for {plan.project.title} <SourceBadge source={plan.source} />
             </h2>
-            <table>
-              <caption className="visually-hidden">Proposed equipment bookings</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Need</th>
-                  <th scope="col">Why</th>
-                  <th scope="col">Proposed slot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {plan.items.map((i) => (
-                  <tr key={i.category}>
-                    <th scope="row">
-                      {titleCase(i.category)}
-                      <br />
-                      <span className="muted small">{i.hours} h</span>
-                    </th>
-                    <td>{i.reason}</td>
-                    <td>
-                      {i.start ? (
-                        <>
-                          <strong>{i.equipmentName}</strong>
-                          <br />
-                          {i.label} {i.highDemand && <Badge tone="warn">Fair queue</Badge>}
-                        </>
-                      ) : (
-                        <ul className="violations">
-                          {i.issues.map((x) => (
-                            <li key={x}>{x}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </td>
+            <TableScroll label="Proposed plan">
+              <table>
+                <caption className="visually-hidden">Proposed equipment bookings</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Need</th>
+                    <th scope="col">Why</th>
+                    <th scope="col">Proposed slot</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {plan.items.map((i) => (
+                    <tr key={i.category}>
+                      <th scope="row">
+                        {titleCase(i.category)}
+                        <br />
+                        <span className="muted small">{i.hours} h</span>
+                      </th>
+                      <td>{i.reason}</td>
+                      <td>
+                        {i.start ? (
+                          <>
+                            <strong>{i.equipmentName}</strong>
+                            <br />
+                            {i.label} {i.highDemand && <Badge tone="warn">Fair queue</Badge>}
+                          </>
+                        ) : (
+                          <ul className="violations">
+                            {i.issues.map((x) => (
+                              <li key={x}>{x}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableScroll>
             {schedulable > 0 && (
               <button
                 type="button"

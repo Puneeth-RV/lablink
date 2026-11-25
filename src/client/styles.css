@@ -797,7 +797,7 @@ select:disabled {
   padding: 0;
   margin: 0 0 1.25rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.75rem;
 }
 .stat {
@@ -1008,4 +1008,115 @@ select:disabled {
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 2px;
+}
+
+/* ---------- Responsive ---------- */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.table-scroll table {
+  min-width: 100%;
+}
+.table-scroll:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.alternatives li,
+.row-between,
+.actions {
+  flex-wrap: wrap;
+}
+
+/* Tablet: three filters fit on one line; search spans the row above the two selects when tighter. */
+@media (max-width: 860px) {
+  .filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .filters > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Phone */
+@media (max-width: 640px) {
+  /* Compact two-row header that scrolls away with the page instead of covering it. */
+  .app-header {
+    position: static;
+    gap: 0.5rem 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .app-header nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+  .app-header nav ul {
+    flex-wrap: nowrap;
+  }
+  .nav-link {
+    white-space: nowrap;
+    padding: 0.5rem 0.6rem;
+  }
+  .user-box {
+    margin-left: auto;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+  }
+  .usage,
+  .persona-switcher label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .persona-switcher select {
+    max-width: 11rem;
+    font-size: 0.85rem;
+  }
+
+  main {
+    padding: 1rem 0.85rem;
+  }
+  h1 {
+    font-size: 1.35rem;
+  }
+  .card {
+    padding: 0.9rem 1rem;
+  }
+  .filters {
+    grid-template-columns: 1fr;
+  }
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat-value {
+    font-size: 1.35rem;
+  }
+  .score-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+  .score-row dt {
+    min-width: 0;
+  }
+  .segmented label {
+    flex: 1 1 100%;
+  }
+  .equipment-hero {
+    gap: 1rem;
+  }
+  .btn-primary {
+    width: 100%;
+  }
+  table {
+    font-size: 0.85rem;
+  }
+  th,
+  td {
+    padding: 0.45rem 0.4rem;
+  }
 }

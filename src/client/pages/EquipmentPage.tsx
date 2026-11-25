@@ -1,3 +1,4 @@
+import { TableScroll } from '../components/TableScroll';
 import { useState, type FormEvent } from 'react';
 import { EquipmentMedia } from '../components/EquipmentMedia';
 import { Alternatives, Badge, Loading, Status, ViolationList } from '../components/ui';
@@ -198,29 +199,31 @@ export function EquipmentPage({ id, profile, onBack, onOpen, onBooked }: Props) 
           {availability.loading && <Loading />}
           {availability.error && <Status kind="error">{availability.error}</Status>}
           {availability.data && (
-            <table className="slots">
-              <caption>Hourly availability on {formatDate(`${day}T12:00:00+05:30`)}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Time</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Pending requests</th>
-                </tr>
-              </thead>
-              <tbody>
-                {availability.data.slots.map((s) => (
-                  <tr key={s.start} className={`slot-${s.status}`}>
-                    <th scope="row">
-                      {formatTime(s.start)}–{formatTime(s.end)}
-                    </th>
-                    <td>
-                      <span className={`dot dot-${s.status}`} aria-hidden="true" /> {STATUS_TEXT[s.status]}
-                    </td>
-                    <td>{s.requested || '—'}</td>
+            <TableScroll label="Hourly availability">
+              <table className="slots">
+                <caption>Hourly availability on {formatDate(`${day}T12:00:00+05:30`)}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Pending requests</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {availability.data.slots.map((s) => (
+                    <tr key={s.start} className={`slot-${s.status}`}>
+                      <th scope="row">
+                        {formatTime(s.start)}–{formatTime(s.end)}
+                      </th>
+                      <td>
+                        <span className={`dot dot-${s.status}`} aria-hidden="true" /> {STATUS_TEXT[s.status]}
+                      </td>
+                      <td>{s.requested || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableScroll>
           )}
         </section>
 
