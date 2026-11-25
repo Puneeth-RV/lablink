@@ -31,6 +31,7 @@ export function tokens(text: string): string[] {
     .filter((t) => t.length > 1 && !STOP_WORDS.has(t));
 }
 
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 /**
@@ -44,6 +45,17 @@ export function parseDeadline(text: string, today: string): string | null {
   if (iso) return iso[0];
   const rel = text.match(/\bin\s+(\d{1,2})\s+(day|week)s?\b/);
   if (rel) return fmt(new Date(base.getTime() + Number(rel[1]) * (rel[2] === 'week' ? 7 : 1) * 86_400_000));
+  const weekday = text.match(
+    /\b(next|this|on|by)?\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/,
+  );
+  if (weekday) {
+    // "Friday" / "this Friday" / "by Friday": the next such day after today; "next Friday": that day a week on
+    // if it falls in the current week, matching how people usually mean it.
+    const target = WEEKDAYS.indexOf(weekday[2]!);
+    let ahead = (target - base.getUTCDay() + 7) % 7 || 7;
+    if (weekday[1] === 'next' && ahead < 7 - base.getUTCDay()) ahead += 7;
+    return fmt(new Date(base.getTime() + ahead * 86_400_000));
+  }
   const dm = text.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3,})/) ?? null;
   const md = text.match(/\b([a-z]{3,})\s+(\d{1,2})(?:st|nd|rd|th)?\b/) ?? null;
   for (const [day, month] of [dm ? [dm[1], dm[2]] : null, md ? [md[2], md[1]] : null].filter(Boolean) as [

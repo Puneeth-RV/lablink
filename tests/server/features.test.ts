@@ -274,6 +274,11 @@ describe('free-text projects', () => {
     expect(parseDeadline('due 5th december', '2026-11-23')).toBe('2026-12-05');
     expect(parseDeadline('deadline january 10', '2026-11-23')).toBe('2027-01-10');
     expect(parseDeadline('no date here', '2026-11-23')).toBeNull();
+    // 2026-11-23 is a Monday.
+    expect(parseDeadline('due friday', '2026-11-23')).toBe('2026-11-27');
+    expect(parseDeadline('due this friday', '2026-11-23')).toBe('2026-11-27');
+    expect(parseDeadline('due next friday', '2026-11-23')).toBe('2026-12-04');
+    expect(parseDeadline('due monday', '2026-11-23')).toBe('2026-11-30');
   });
 
   it('creates a validated project for the student and plans it', async () => {

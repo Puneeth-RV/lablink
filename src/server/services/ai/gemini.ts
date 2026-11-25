@@ -12,6 +12,14 @@ import type {
   ProjectDraftInput,
 } from './types.js';
 
+const RETRY_DELAY_MS = 600;
+
+/** True for temporary Gemini failures worth one retry (overloaded or rate-limited). */
+export function isTransient(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /\b(503|429)\b|UNAVAILABLE|RESOURCE_EXHAUSTED|high demand/i.test(message);
+}
+
 /** Gemini-backed assistant: structured JSON output, validated, cached, time-boxed. */
 const DiscoverySchema = z.object({
   matches: z.array(z.object({ equipmentId: z.string(), reason: z.string().max(300) })).max(5),
@@ -184,13 +192,23 @@ export class GeminiAssistant implements AiAssistant {
     if (cached !== undefined) return cached as T;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      const raw = await Promise.race([
+    const attempt = () =>
+      Promise.race([
         this.generate({ system: SYSTEM, prompt: req.prompt, schema: req.schema, signal: controller.signal }),
         new Promise<never>((_, reject) =>
           controller.signal.addEventListener('abort', () => reject(new Error('Gemini timeout'))),
         ),
       ]);
+    try {
+      let raw: string;
+      try {
+        raw = await attempt();
+      } catch (err) {
+        // Overload (503) and rate-limit (429) spikes are usually momentary: retry once within the time box.
+        if (!isTransient(err) || controller.signal.aborted) throw err;
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        raw = await attempt();
+      }
       const parsed = schema.parse(JSON.parse(raw));
       this.cache.set(key, parsed);
       return parsed;

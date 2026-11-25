@@ -131,3 +131,28 @@ describe('TokenService', () => {
     expect(svc.verify(token)).toBeNull();
   });
 });
+
+describe('transient Gemini errors', () => {
+  it('retries once on overload, then succeeds', async () => {
+    const generate = vi
+      .fn<GenerateJson>()
+      .mockRejectedValueOnce(new Error('{"error":{"code":503,"status":"UNAVAILABLE"}}'))
+      .mockResolvedValueOnce(JSON.stringify({ matches: [{ equipmentId: 'gpu-1', reason: 'r' }] }));
+    const res = await new GeminiAssistant(generate, new RulesAssistant(), 3000, silent).discover(
+      'train',
+      catalog,
+    );
+    expect(res.source).toBe('gemini');
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry permanent errors', async () => {
+    const generate = vi.fn<GenerateJson>().mockRejectedValue(new Error('API key not valid'));
+    const res = await new GeminiAssistant(generate, new RulesAssistant(), 3000, silent).discover(
+      'deep learning',
+      catalog,
+    );
+    expect(res.source).toBe('rules');
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+});

@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Puneeth-RV/lablink/actions/workflows/ci.yml/badge.svg)](https://github.com/Puneeth-RV/lablink/actions/workflows/ci.yml)
 
-> **Live demo:** moving to Render, link coming soon. You can [deploy your own](#deploy) in a few minutes.
+> **Live demo:** https://lablink-xk5e.onrender.com (free hosting: the first visit after a quiet period can take about a minute to wake up)
 
 Most colleges have expensive lab equipment, such as oscilloscopes, FPGA boards, GPU workstations and 3D printers, spread across departments. Students in one department rarely know what another department has. When something is in demand, whoever books first gets it, even if someone else's deadline is tomorrow. Approvals, safety training and clashes are usually handled over email.
 
