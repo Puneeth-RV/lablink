@@ -1,75 +1,65 @@
-# LabLink — Making College Laboratories More Accessible
+# LabLink
 
-**Live app:** https://lablink-756211397575.asia-south1.run.app
+**Fair, explainable sharing of campus lab equipment, with AI that understands students and rules that decide.**
 
-LabLink is a GenAI-powered campus laboratory resource-sharing platform. Students discover specialised equipment across departments, book slots, request project-based access and get faculty approvals. When several students want the same high-demand equipment at the same time, LabLink **resolves the conflict fairly and transparently** using project deadlines, recent usage, requirement fit and waiting time — and offers everyone else feasible alternatives.
+[![CI](https://github.com/Puneeth-RV/lablink/actions/workflows/ci.yml/badge.svg)](https://github.com/Puneeth-RV/lablink/actions/workflows/ci.yml)
 
-## Problem statement
+> **Live demo:** moving to Render, link coming soon. You can [deploy your own](#deploy) in a few minutes.
 
-> **LabLink — Making College Laboratories More Accessible**
->
-> Create a GenAI-powered campus laboratory resource-sharing platform that helps students discover and access specialised equipment, development kits, and laboratory workstations across departments. The platform should enable equipment discovery, intelligent slot booking, project-based access requests, and faculty approvals while optimising resource utilisation. It should intelligently resolve scheduling conflicts by recommending fair and feasible equipment allocations based on project deadlines, availability, and student requirements.
+Most colleges have expensive lab equipment, such as oscilloscopes, FPGA boards, GPU workstations and 3D printers, spread across departments. Students in one department rarely know what another department has. When something is in demand, whoever books first gets it, even if someone else's deadline is tomorrow. Approvals, safety training and clashes are usually handled over email.
 
-## Chosen vertical
+LabLink is a web app that fixes that. Students find equipment by describing what they need, plan a whole project's lab time from a few sentences, and book slots that are checked against real rules. When several students want the same machine, LabLink ranks them with a transparent score and offers everyone else an alternative. Faculty get pre-reviewed approval requests, one-click conflict resolution and utilisation insights.
 
-**Campus laboratory resource sharing** (problem statement: _LabLink — Making College Laboratories More Accessible_). Personas: **students** who need equipment for projects, and **faculty** who approve access and oversee their department's equipment.
+## Features
 
-## How it works
+**For students**
 
-| Need in the problem statement              | How LabLink solves it                                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Equipment discovery                        | Catalogue across 4 departments with search and filters, plus **natural-language discovery**: describe your project need and Gemini recommends matching equipment with a reason for each.                                                                                                                                                                                                                |
-| Intelligent slot booking                   | Every booking is checked against hard rules (lab hours, max slot length, training, approval, deadline, weekly fair-use cap). Normal equipment books instantly; clashes return **409 with alternatives** instead of a dead end.                                                                                                                                                                          |
-| Project-based access requests              | Approval-gated equipment needs a request tied to a project. Each request gets an **AI pre-review** (summary and risk flags such as missing training or deadline pressure) for faculty.                                                                                                                                                                                                                  |
-| Faculty approvals                          | Faculty see only requests for equipment owned by their department, with approve/reject and an optional note.                                                                                                                                                                                                                                                                                            |
-| Optimising resource utilisation            | Utilisation insights by department, equipment and hour, with recommendations such as _"Scope A is 89% booked while equivalent Scope C is 0% — redirect new requests there"_.                                                                                                                                                                                                                            |
-| Project-based access (free-text projects)  | Students describe a new project in their own words, for example _"smart wheelchair with obstacle detection, due next Friday"_. Gemini extracts the title, the deadline (relative dates are resolved against today) and the equipment categories needed. The server rejects missing, past or far-future deadlines and unknown categories, and the project is saved to Firestore.                         |
-| Intelligent slot booking (planning)        | **AI project planner**: a student picks a project and says what they need to do next. Gemini infers the equipment categories and hours needed, then the deterministic planner (`domain/planner.ts`) finds the earliest feasible slot for each one before the deadline. It respects training, approvals, the weekly cap and the student's other bookings, and the whole plan can be booked in one click. |
-| Optimising resource utilisation (no-shows) | **Check-in and no-show release**: check-in opens 10 minutes before a slot. If nobody checks in within 15 minutes, the rest of the slot is released for others. Bookings can be exported to any calendar (`.ics` with a 15-minute reminder).                                                                                                                                                             |
-| Keeping equipment usable                   | **Fault reporting**: anyone can report a problem with an item. Department faculty can take it offline (it then disappears from booking and planning) and bring it back once resolved.                                                                                                                                                                                                                   |
-| Fair and feasible conflict resolution      | High-demand equipment uses a **fair queue** instead of first-come-first-served. The allocation engine ranks competing requests, grants the slot and gives everyone else ranked alternatives. Gemini explains each decision in plain language.                                                                                                                                                           |
+- **Find equipment in plain English.** Type "debug I2C signals on my sensor board" and get matching equipment from every department, each with a reason.
+- **Plan my project.** Describe the project and its deadline in your own words ("due next Friday"). LabLink extracts the deadline and the equipment you need, then proposes the earliest feasible slots. Book them all in one click.
+- **Smart booking.** Every booking is checked against lab hours, safety training, faculty approval, the project deadline and a weekly fair-use cap. If a slot can't be booked, you get the reason and concrete alternatives instead of a dead end.
+- **Fair queue for high-demand equipment.** Instead of first-come-first-served, competing requests are allocated fairly (see [How allocation works](#how-allocation-works)).
+- **Practical extras.** Check in when you arrive (no-shows are released after 15 minutes), add bookings to your calendar with a reminder, and report faulty equipment.
 
-### Approach and logic: deterministic decisions, AI understanding
+**For faculty**
 
-The core design principle is that **decisions are deterministic, tested and auditable, while Gemini understands and explains.** Allocation never depends on an LLM. That makes it fair, reproducible and testable, and the app keeps working if the AI is slow or unavailable.
+- **Approvals with a pre-review** that flags risks such as missing safety training or deadline pressure.
+- **One-click conflict resolution.** Competing requests are shown ranked with their score breakdown, and a plain-language explanation is generated.
+- **Fault management.** Take reported equipment offline and bring it back once fixed.
+- **Utilisation insights.** See which equipment is overbooked and which sits idle, for example "Scope A is 80% booked while Scope B is 3%, so redirect requests".
 
-**Allocation engine** (`src/server/domain/allocation.ts`):
+**Everywhere:** light and dark themes, real equipment photos, keyboard and screen-reader support, and navigation badges for anything that needs attention.
 
-1. **Feasibility filter (hard rules)** — `domain/policy.ts`: inside lab hours (09:00–18:00 IST, whole hours), not in the past, ends before the project deadline, equipment not under maintenance, student owns the project, required safety training done, faculty approval granted if required, and the weekly fair-use cap (12 h) is not exceeded.
-2. **Priority score** (each factor 0–1, shown to users as a breakdown):
-   - **Deadline urgency – 40%**: `1 − daysToDeadline / 30`
-   - **Fair share – 25%**: `1 − hoursUsedLast7Days / 12`, so heavy users don't monopolise equipment
-   - **Requirement fit – 20%**: 1 if the equipment category is _essential_ to the project, 0.4 if nice-to-have
-   - **Waiting time – 15%**: `hoursWaiting / 48`
-   - Ties are broken by request time, then id, so the result is fully deterministic regardless of input order.
-3. **Grant in rank order** while the slot is still free. Every other request gets **alternatives**: the nearest free slots on the same equipment before its deadline, then _equivalent equipment_ (same category) in other departments at the requested time, filtered by the student's training.
-4. **Explain**: Gemini turns the score breakdown into a short, neutral explanation for students and faculty. A templated explanation is used if Gemini is unavailable.
+## How allocation works
 
-**Where Gemini is used** (`src/server/services/ai.ts`):
+The core design principle: **AI understands, rules decide.** Gemini reads what people type and explains outcomes, but who gets a machine is decided by deterministic, tested code. That keeps allocation fair, reproducible and auditable, and it still works if the AI is slow or unavailable.
 
-- Natural-language equipment discovery (structured JSON output, ranked IDs and reasons)
-- Project planning: inferring the equipment categories and hours a project needs, restricted to categories that exist on campus
-- Access-request pre-review for faculty (summary and risk flags)
-- Allocation explanations
+1. **Hard rules first** (`src/server/domain/policy.ts`): within lab hours, not in the past, before the project deadline, equipment in service, the student owns the project, required training done, approval granted where needed, and within the weekly 12-hour cap.
+2. **A transparent priority score** (`src/server/domain/allocation.ts`), where each factor is 0–1 and shown to users:
 
-Every call uses a JSON schema for structured output, is validated with zod, filtered to known equipment IDs (no hallucinated items), wrapped in an 8 s timeout, cached for 10 min, and falls back to a deterministic rule-based assistant. Untrusted user text is placed inside `<user_input>` delimiters, and the system instruction tells the model never to follow instructions found there.
+   | Factor           | Weight | Meaning                                                      |
+   | ---------------- | ------ | ------------------------------------------------------------ |
+   | Deadline urgency | 40%    | the closer the project deadline, the higher                  |
+   | Fair share       | 25%    | the less lab time used this week, the higher                 |
+   | Requirement fit  | 20%    | essential equipment for the project ranks above nice-to-have |
+   | Waiting time     | 15%    | the longer the request has waited, the higher                |
 
-## How LabLink meets the challenge expectations
+   Ties break by request time, then id, so the result never depends on input order.
 
-| Expectation                                       | Evidence in LabLink                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A smart, dynamic assistant**                    | Students describe needs in plain English and LabLink recommends equipment (`POST /api/discover`). They describe a whole project in free text ("due next Friday") and it extracts the title, deadline and equipment needs (`POST /api/projects`), then builds a bookable schedule (`POST /api/plan`). Faculty get an automatic pre-review of each access request and a plain-language explanation of every allocation. Everything is **dynamic**: live availability, the fair queue, no-show release and fault status change what the assistant recommends. |
-| **Logical decision making based on user context** | Every decision uses the requesting user's context: **role** (student or faculty), **department** (faculty only see and act on their own department's equipment), **safety trainings**, **approved access** per project, **project deadline**, **hours already used this week** (fair-use cap) and **time waiting**. These feed deterministic rules (`domain/policy.ts`) and the explainable priority score (`domain/allocation.ts`). The same request from two students can correctly get different outcomes, and the reason is always shown.              |
-| **Practical, real-world usability**               | Clashes and infeasible requests never dead-end; they return concrete alternatives. Bookings export to any calendar with a reminder. Check-in frees up no-shows. Students can report faults, and faculty can take equipment offline. Navigation badges show what needs attention. It works on mobile, by keyboard and with screen readers, in light and dark themes, with real equipment photos.                                                                                                                                                            |
-| **Clean, maintainable code**                      | Pure domain layer with no I/O, a thin HTTP layer, and dependency injection (`createApp(deps)`). Strict TypeScript shares types between client and server. Prettier formatting and ESLint (including jsx-a11y strict) are enforced, and CI runs the format check, lint, typecheck, tests, build and audit on every push. The AI layer is split by responsibility (`services/ai/`: types, rules fallback, text parsing, Gemini, cache, transport). 93 tests cover about 90% of lines.                                                                        |
+3. **Grant in rank order, with alternatives for everyone else:** the nearest free slots on the same equipment before their deadline, or equivalent equipment in another department.
+4. **Explain:** Gemini writes a short, neutral explanation from the score breakdown. A templated explanation is used if the AI is unavailable.
+
+### Where Gemini is used
+
+- Natural-language equipment discovery
+- Extracting a project's title, deadline and equipment needs from free text
+- Pre-reviewing access requests for faculty
+- Explaining allocation decisions
+
+Every call uses structured JSON output validated with zod, is filtered to equipment that actually exists (so it can't recommend made-up items), has an 8-second timeout and a 10-minute cache, and falls back to a rule-based assistant. User text is delimited in prompts so it can't override the instructions.
 
 ## Architecture
 
-![LabLink architecture: students and faculty use a React web app over HTTPS; it calls an Express API on Google Cloud Run containing the API layer, allocation engine, project planner and policy rules; the API uses Gemini for discovery, planning and explanations, Firebase Firestore for bookings, requests and approvals, and Secret Manager for API keys.](docs/architecture.jpg)
-
-**Request flow for a contested booking:** the API validates the input and the user's role, then `policy.ts` checks training, approvals, deadline, lab hours and the weekly cap. `allocation.ts` ranks competing requests (deadline 40%, fair share 25%, fit 20%, waiting 15%). The winner's booking is written through to Firestore, and Gemini explains the outcome in plain language. If Gemini is slow or unavailable, a templated explanation is used, so the decision itself never depends on the AI.
-
-Code layout:
+![LabLink architecture: students and faculty use a React web app over HTTPS; it calls an Express API that contains the API layer, allocation engine, project planner and policy rules; the API uses Gemini for discovery, planning and explanations, Firebase Firestore for bookings, requests and approvals, and Secret Manager for API keys.](docs/architecture.jpg)
 
 ```
 src/server/  routes/ (HTTP) → services/ (orchestration, AI, auth, persistence) → domain/ (pure rules)
@@ -77,73 +67,48 @@ src/client/  pages/ · components/ · lib/ (typed API client, hooks, formatting,
 tests/       server/ (domain, API, AI, persistence, features) · client/ (components, pages, axe)
 ```
 
-- **Google Cloud Run**: one container serves both the API and the static client (multi-stage `node:22-alpine` image, runs as a non-root user, scales to zero).
-- **Firebase Cloud Firestore**: durable storage with a **write-through** design. Reads come from an in-memory working set (O(1), no network latency per request). Every mutation is written through to Firestore in order (`services/persistence.ts`), so bookings, requests, approvals and allocations survive restarts and redeploys. Access uses the Cloud Run service identity through IAM, with no keys. If Firestore is unreachable at boot, the app logs it and serves from memory rather than going down.
-- **Gemini (Google GenAI SDK)**: discovery, reviews and explanations.
-- **Gemini model**: `gemini-flash-lite-latest`, chosen for low latency (about 1.5 s) and cost on short structured tasks.
-- **Secret Manager**: the session-signing secret (and the Gemini key) are injected at runtime, never stored in code or the image.
-- **Cloud Build**: builds the image from source on deploy.
+**Tech stack:** React and TypeScript (Vite), Node and Express 5, Gemini via the Google GenAI SDK (`gemini-flash-lite-latest`), Firebase Firestore (optional), and Docker. It runs on any container host: Render, Google Cloud Run, Fly.io and so on.
 
-## How each evaluation criterion is addressed
+**Storage:** the app serves reads from an in-memory working set and, when Firestore is enabled, writes every change through to it, so data survives restarts. Without Firestore it runs entirely in memory with seeded demo data.
 
-- **Code quality**: strict TypeScript across client and server; pure domain layer separated from I/O; dependency injection (`createApp(deps)`) so everything is testable; shared domain types between client and server; ESLint (typescript-eslint, jsx-a11y strict, react-hooks).
-- **Security**:
-  - Helmet with a strict Content-Security-Policy (`default-src 'self'`, no inline scripts or styles), HSTS and `frame-ancestors 'none'`.
-  - zod validation with length caps on every input; JSON body limit of 10 kb.
-  - HMAC-SHA256 signed, expiring session tokens with a constant-time signature check.
-  - Role-based access control, plus department scoping for faculty.
+## Engineering notes
+
+- **Security:**
+  - Strict Content-Security-Policy and security headers (Helmet).
+  - zod validation and length limits on every input.
+  - HMAC-signed, expiring session tokens.
+  - Role-based access, with faculty limited to their own department.
   - Per-IP rate limits, stricter on AI endpoints.
-  - A central error handler that never leaks stack traces.
-  - Prompt-injection hardening and secrets held in Secret Manager.
-  - Non-root container; `npm audit` reports 0 vulnerabilities.
-- **Efficiency**:
-  - 7 runtime dependencies; the Gemini and Firestore SDKs are lazily imported, so startup stays fast.
-  - The client is about 80 kB gzipped, and faculty-only pages are code-split.
-  - Hashed assets are served with `immutable` 1-year caching; responses are gzip-compressed.
-  - AI responses are cached with a TTL; catalogue search is debounced.
-  - Data lookups are O(1), indexed by id; alternative slots are generated lazily.
-  - **Bounded memory**: only active bookings and requests from the last 30 days are loaded into the working set (full history stays in Firestore). The AI cache is size- and time-bounded, and missing AI reviews are generated in parallel.
-  - The Cloud Run service scales to zero.
-- **Testing**: 93 Vitest tests (about 90% line coverage, `npm run test:coverage`):
-  - Domain unit tests: time, policy, scoring, deterministic allocation, alternatives, conflict grouping, utilisation.
-  - API integration tests with supertest: auth, RBAC, validation, 409/422 flows, the approval workflow, conflict resolution, analytics.
-  - AI service tests with a mocked model: caching, timeout, invalid JSON and API-error fallbacks, prompt delimiting, hallucination filtering.
-  - Persistence tests with a fake document database: data survives a restart, stale data is reseeded, failed writes are logged without breaking requests, and snapshots are written in order.
-  - Config validation tests.
-  - Feature tests for the planner (earliest feasible slot, no double-booking, training and cap issues), check-in windows and no-show release, fault reporting with department scoping, and calendar export.
-  - Client tests with Testing Library covering every page (discovery, equipment booking, planner, my bookings, approvals, conflicts, faults, insights). Each page runs an **automated axe-core accessibility check** and is exercised through keyboard and pointer interactions.
-- **Accessibility**:
-  - Semantic landmarks and a skip link; focus moves to the page heading on navigation.
-  - Every input is labelled, and errors are linked with `aria-describedby`.
-  - `role="alert"` and `role="status"` live regions announce async and AI results.
-  - Availability is shown as a real table with text status, not colour alone; scores and utilisation use labelled `<meter>` elements with text values.
-  - Visible focus rings, AA-contrast colours, 44 px touch targets, and `prefers-reduced-motion` support.
-- **Problem alignment**: every requirement in the problem statement maps to a feature (see the table above), with fair conflict resolution as the centrepiece.
+  - An error handler that never leaks internals.
+  - A non-root container.
+- **Testing:** 93 Vitest tests at about 90% line coverage. They cover the pure domain rules, API integration (auth, permissions, validation, booking flows), AI fallbacks with a mocked model, persistence, and every UI page with automated axe-core accessibility checks. CI runs the format check, lint, type check, tests, build and dependency audit on every push.
+- **Accessibility:** semantic landmarks, a skip link, labelled inputs, live regions for async results, status always shown as text (never colour alone), visible focus, AA contrast in both themes, and reduced-motion support. Lighthouse scores 100 on accessibility.
+- **Performance:** about 80 kB of gzipped JavaScript, code-split faculty pages, immutable asset caching, compression, lazily loaded SDKs, debounced search, bounded memory, and photos of about 40 KB each.
 
-## Assumptions
-
-- **No login wall (by design)**: following the organisers' guidance that evaluators must reach the app without signing in, LabLink opens straight into the student view. A **"Viewing as"** selector in the header switches between student and faculty personas, which stand in for campus single sign-on. Security is still enforced server-side: every API call needs an HMAC-signed, expiring session token, and role and department checks apply on every request. In production, the persona selector would be replaced by Firebase Authentication or campus SSO.
-- **Data**: Firestore is the source of truth. On first boot, or when the demo data is more than 24 h old, it is seeded with demo data relative to the current date so the demo always looks current. Cloud Run runs a single instance (`--max-instances=1`) so the in-memory working set and Firestore stay consistent. Scaling out would mean reading through to Firestore with transactions.
-- **Time**: slots are whole hours between 09:00 and 18:00 campus time (IST). The weekly fair-use cap is 12 hours per student.
-- **Faculty scope**: faculty approve requests and resolve conflicts for equipment owned by their own department.
-- **High-demand equipment**: flagged per item and allocated through the fair queue. Other equipment is booked instantly.
-
-## Images
-
-29 equipment photos come from Wikimedia Commons under free licences (CC0, CC BY or CC BY-SA). Each was resized to about 40 KB and is served from the app itself, so no third-party requests are made. Authors and licences are listed in [`CREDITS.md`](CREDITS.md) and shown under each photo. If an item has no photo (for example, newly added equipment), the app falls back to an original line-art illustration for its category.
-
-## Run locally
+## Getting started
 
 ```bash
 npm install
-cp .env.example .env        # add GEMINI_API_KEY (optional — falls back to rules) and SESSION_SECRET
+cp .env.example .env        # GEMINI_API_KEY is optional; without it a rule-based fallback is used
 npm run dev                 # API on :8080, client on :5173
-npm test                    # all tests
-npm run lint && npm run typecheck
+npm test                    # run all tests
+npm run lint && npm run typecheck && npm run format:check
 npm run build && npm start  # production build on :8080
 ```
 
-## Deploy (Google Cloud Run)
+**Demo accounts:** there's no login. A **"Viewing as"** selector in the header switches between demo students and faculty, and stands in for campus single sign-on. The API still uses signed session tokens and role checks on every request. A real deployment would plug in Firebase Authentication or campus SSO.
+
+**Try it:**
+
+1. As **Asha**, describe a need on _Find equipment_.
+2. Open _Plan my project_ and describe a project with a deadline.
+3. Switch to **Dr. Lakshmi Iyer** and look at _Approvals_ and _Conflicts_. Click **Apply fair allocation**.
+
+## Deploy
+
+**Render (free):** the repo includes a `render.yaml`. In Render, choose **New → Blueprint**, select this repo, and paste your `GEMINI_API_KEY` when prompted. Render builds the Dockerfile, generates `SESSION_SECRET`, and runs the app with in-memory demo data. Free instances sleep after 15 minutes of inactivity, so the first request after that takes a little longer.
+
+**Google Cloud Run (with Firestore):**
 
 ```bash
 gcloud run deploy lablink --source . --region asia-south1 --allow-unauthenticated \
@@ -152,13 +117,17 @@ gcloud run deploy lablink --source . --region asia-south1 --allow-unauthenticate
   --set-secrets=SESSION_SECRET=session-secret:latest,GEMINI_API_KEY=gemini-api-key:latest
 ```
 
-## Demo walkthrough
+## Limitations and next steps
 
-1. The app opens as **Asha (student)**, with no login needed. Under _Find equipment_, type _"debug I2C signals on my soil sensor"_ to get AI recommendations. Open the Keysight oscilloscope and request a slot: it joins the fair queue.
-2. Try booking the 3D printer as Asha: you get a clear _training required_ message plus alternatives.
-3. Use **Viewing as** to switch to **Dr. Iyer (faculty, ECE)**:
-   - _Approvals_: see the AI pre-review and approve Asha's FPGA request.
-   - _Conflicts_: see three students competing for the same oscilloscope slot, each with a transparent score breakdown. Click **Apply fair allocation** to commit it and get an explanation.
-   - _Faults_: take a reported faulty oscilloscope offline.
-   - _Insights_: see the over-used scope and the recommendation to redirect demand to an idle equivalent.
-4. Switch back to Asha and open **Plan my project**: describe the next steps (for example _"debug the I2C bus and solder the PCB"_) to get a feasible, bookable schedule before the deadline.
+- Demo personas instead of real authentication: Firebase Auth or SSO is the next step.
+- Runs as a single instance, so the in-memory working set stays consistent. Scaling out would need reads through Firestore with transactions.
+- Seeded demo data. A real campus would import its own equipment list and lab rules (hours, caps and weights are single constants in `src/server/domain/`).
+- Notifications by email or WhatsApp for approvals and allocations.
+
+## Background
+
+I built LabLink in about five hours at **PromptWars 2026** (Hack2skill × Cynergy Coding Club), a one-day AI-assisted build challenge, where it finished in the top 12 of 336 on the automated evaluation. I've since cleaned it up as a personal project.
+
+## Credits
+
+Equipment photos are from Wikimedia Commons under free licences; see [`CREDITS.md`](CREDITS.md).
