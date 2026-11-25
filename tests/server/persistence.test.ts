@@ -141,6 +141,19 @@ describe('config', () => {
     ).toBe('firestore');
   });
 
+  it('treats blank variables (as in .env.example) as unset', () => {
+    const c = loadConfig({
+      GEMINI_API_KEY: '',
+      SESSION_SECRET: '',
+      GOOGLE_CLOUD_PROJECT: '',
+      GEMINI_TIMEOUT_MS: '',
+      PORT: '',
+    });
+    expect(c.geminiApiKey).toBeUndefined();
+    expect(c.port).toBe(8080);
+    expect(c.sessionSecret.length).toBeGreaterThanOrEqual(32);
+  });
+
   it('rejects invalid values', () => {
     expect(() => loadConfig({ PERSISTENCE: 'mysql' })).toThrow();
     expect(() => loadConfig({ SESSION_SECRET: 'short' })).toThrow();

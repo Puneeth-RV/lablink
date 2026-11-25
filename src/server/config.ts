@@ -25,7 +25,11 @@ export interface AppConfig {
 
 /** Validates environment variables once at boot; fails fast on misconfiguration in production. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const parsed = EnvSchema.parse(env);
+  // Blank lines such as `GEMINI_API_KEY=` (as in .env.example) mean "not set", not an empty value.
+  const present = Object.fromEntries(
+    Object.entries(env).filter(([, v]) => v !== undefined && v.trim() !== ''),
+  );
+  const parsed = EnvSchema.parse(present);
   if (parsed.NODE_ENV === 'production' && !parsed.SESSION_SECRET) {
     throw new Error('SESSION_SECRET (>= 32 chars) is required in production');
   }
