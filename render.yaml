@@ -4,6 +4,7 @@ services:
     name: lablink
     runtime: docker
     plan: free
+    region: singapore
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
